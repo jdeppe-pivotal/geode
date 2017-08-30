@@ -7751,7 +7751,7 @@ public class LocalRegion extends AbstractRegion implements LoaderHelperFactory,
     if (it.hasNext()) {
       try {
         if (isEntryExpiryPossible()) {
-          ExpiryTask.setNow();
+          ExpiryTask.setNow(this);
         }
         while (it.hasNext()) {
           addExpiryTask(it.next());

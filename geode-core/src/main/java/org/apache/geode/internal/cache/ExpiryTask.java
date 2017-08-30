@@ -144,7 +144,6 @@ public abstract class ExpiryTask extends SystemTimer.SystemTimerTask {
       return extm;
   }
 
-
   /**
    * Return true if current task could have expired. Return false if expiration is impossible.
    */
@@ -461,12 +460,14 @@ public abstract class ExpiryTask extends SystemTimer.SystemTimerTask {
    * to set a thread local. Make sure and call {@link #clearNow()} in a finally block after calling
    * this method.
    */
-  public static void setNow() {
-    now.set(calculateNow());
+  public static void setNow(LocalRegion lr) {
+    now.set(calculateNow(lr.getCache()));
   }
 
-  private static long calculateNow() {
-    InternalCache cache = GemFireCacheImpl.getInstance();
+  public long calculateNow() {
+    return calculateNow(getLocalRegion().getCache());
+  }
+  public static long calculateNow(InternalCache cache) {
     if (cache != null) {
       // Use cache.cacheTimeMillis here. See bug 52267.
       InternalDistributedSystem ids = cache.getInternalDistributedSystem();
@@ -479,19 +480,19 @@ public abstract class ExpiryTask extends SystemTimer.SystemTimerTask {
 
   /**
    * Call this method after a thread has called {@link #setNow()} once you are done calling code
-   * that may call {@link #getNow()}.
+   * that may call {@link #getNow(LocalRegion)}.
    */
   public static void clearNow() {
     now.remove();
   }
 
   /**
-   * Returns the current time in milliseconds. If the current thread has called {@link #setNow()}
+   * Returns the current time in milliseconds. If the current thread has called {@link #setNow(LocalRegion)}
    * then that time is return.
    * 
    * @return the current time in milliseconds
    */
-  public static long getNow() {
+  protected long getNow() {
     long result;
     Long tl = now.get();
     if (tl != null) {
