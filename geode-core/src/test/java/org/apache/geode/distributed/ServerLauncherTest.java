@@ -18,6 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -25,7 +26,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.net.InetAddress;
 import java.util.Collections;
 
 import org.junit.Before;
@@ -271,8 +271,7 @@ public class ServerLauncherTest {
 
     launcher.startCacheServer(cache);
 
-    // getServerBindAddress() returns the localhost address when set to null in the ServerState
-    verify(cacheServer, times(1)).setBindAddress(InetAddress.getLocalHost().getCanonicalHostName());
+    verify(cacheServer, times(1)).setBindAddress(isNull());
     verify(cacheServer, times(1)).setPort(eq(11235));
     verify(cacheServer, times(1)).start();
   }
