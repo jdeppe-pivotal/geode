@@ -456,8 +456,8 @@ public abstract class ExpiryTask extends SystemTimer.SystemTimerTask {
   private static final ThreadLocal<Long> now = new ThreadLocal<Long>();
 
   /**
-   * To reduce the number of times we need to call calculateNow, you can call this method
-   * to set now in a thread local. When the run returns the thread local is cleared.
+   * To reduce the number of times we need to call calculateNow, you can call this method to set now
+   * in a thread local. When the run returns the thread local is cleared.
    */
   static void doWithNowSet(LocalRegion lr, Runnable runnable) {
     now.set(calculateNow(lr.getCache()));
@@ -488,6 +488,7 @@ public abstract class ExpiryTask extends SystemTimer.SystemTimerTask {
   public long calculateNow() {
     return calculateNow(getLocalRegion().getCache());
   }
+
   public static long calculateNow(InternalCache cache) {
     if (cache != null) {
       // Use cache.cacheTimeMillis here. See bug 52267.
