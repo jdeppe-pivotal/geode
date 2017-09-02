@@ -768,7 +768,7 @@ public class CacheDistributionAdvisor extends DistributionAdvisor {
         } else {
           if (lclRgn == null) {
             handleCacheDistributionAdvisee(
-                PartitionedRegionHelper.getProxyBucketRegion(GemFireCacheImpl.getInstance(),
+                PartitionedRegionHelper.getProxyBucketRegion(dm.getCache(),
                     adviseePath, false),
                 adviseePath, removeProfile, exchangeProfiles, false, replyProfiles);
           } else {

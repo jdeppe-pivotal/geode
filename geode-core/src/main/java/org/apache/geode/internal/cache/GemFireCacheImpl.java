@@ -1709,6 +1709,7 @@ public class GemFireCacheImpl implements InternalCache, InternalClientCache, Has
     }
   }
 
+  @Override
   public void shutDownAll() {
     if (LocalRegion.ISSUE_CALLBACKS_TO_CACHE_OBSERVER) {
       try {
