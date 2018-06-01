@@ -48,4 +48,12 @@ if (GradleVersion.current() < GradleVersion.version(minimumGradleVersion)) {
   throw new GradleException('Running with unsupported Gradle Version. Use Gradle Wrapper or with Gradle version >= ' + minimumGradleVersion)
 }
 
-
+buildCache {
+  local {
+    enabled = false
+  }
+  remote(HttpBuildCache) {
+    url = "https://5gyf3c5bixnbgcvqoz6db2ibie-trial.gradle.com/cache/"
+    push = true
+  }
+}

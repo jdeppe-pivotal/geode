@@ -47,20 +47,20 @@ subprojects {
       jar.doFirst {
         manifest {
           attributes(
-            "Manifest-Version": "1.0",
-            "Created-By": System.getProperty("user.name"),
-            "Title": rootProject.name,
-            "Version": version,
-            "Organization": productOrg
+                  "Manifest-Version": "1.0",
+                  "Created-By": System.getProperty("user.name"),
+                  "Title": rootProject.name,
+                  "Version": version,
+                  "Organization": productOrg
           )
         }
-
-        metaInf {
+      }
+      jar.metaInf {
           from("$rootDir/LICENSE")
           if (jar.source.filter({ it.name.contains('NOTICE') }).empty) {
             from("$rootDir/NOTICE")
           }
-        }
+
       }
     }
   })

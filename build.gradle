@@ -26,12 +26,22 @@ buildscript {
   dependencies {
     classpath "gradle.plugin.org.nosphere.apache:creadur-rat-gradle:0.2.0"
     classpath 'com.bmuschko:gradle-nexus-plugin:2.3.1'
-    classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.0.1'
     classpath "com.diffplug.spotless:spotless-plugin-gradle:3.10.0"
     classpath "me.champeau.gradle:jmh-gradle-plugin:0.3.1"
     classpath "com.pedjak.gradle.plugins:dockerized-test:0.5.6-SNAPSHOT"
     classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
   }
+}
+
+plugins {
+  id 'com.gradle.build-scan' version '1.13.4'
+  id "org.sonarqube" version "2.6.2"
+}
+
+buildScan {
+  server = "https://5gyf3c5bixnbgcvqoz6db2ibie-trial.gradle.com"
+  termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+  termsOfServiceAgree = 'yes'
 }
 
 apply plugin: 'wrapper'
