@@ -38,6 +38,7 @@ subprojects {
         targetCompatibility '1.8'
         options.encoding = 'UTF-8'
       }
+      javac.options.incremental = true
     }
   })
 
@@ -54,12 +55,12 @@ subprojects {
             "Organization": productOrg
           )
         }
+      }
 
-        metaInf {
-          from("$rootDir/LICENSE")
-          if (jar.source.filter({ it.name.contains('NOTICE') }).empty) {
-            from("$rootDir/NOTICE")
-          }
+      jar.metaInf {
+        from("$rootDir/LICENSE")
+        if (jar.source.filter({ it.name.contains('NOTICE') }).empty) {
+          from("$rootDir/NOTICE")
         }
       }
     }
