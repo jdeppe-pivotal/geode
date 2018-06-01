@@ -104,10 +104,11 @@ subprojects {
   }
 
   javadoc.classpath += configurations.provided
-
   javadoc {
     options.addStringOption('Xdoclint:none', '-quiet')
     options.encoding = 'UTF-8'
+    destinationDir = file("$buildDir/javadoc")
+
   }
 }
 
