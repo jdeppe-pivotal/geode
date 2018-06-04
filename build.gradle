@@ -32,9 +32,18 @@ buildscript {
     classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
   }
 }
+
 plugins {
-    id "org.sonarqube" version "2.6.2"
+  id 'com.gradle.build-scan' version '1.13.4'
+  id "org.sonarqube" version "2.6.2"
 }
+
+buildScan {
+  server = "https://5gyf3c5bixnbgcvqoz6db2ibie-trial.gradle.com"
+  termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+  termsOfServiceAgree = 'yes'
+}
+
 apply plugin: 'wrapper'
 
 wrapper {

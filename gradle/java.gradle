@@ -48,11 +48,11 @@ subprojects {
       jar.doFirst {
         manifest {
           attributes(
-            "Manifest-Version": "1.0",
-            "Created-By": System.getProperty("user.name"),
-            "Title": rootProject.name,
-            "Version": version,
-            "Organization": productOrg
+                  "Manifest-Version": "1.0",
+                  "Created-By": System.getProperty("user.name"),
+                  "Title": rootProject.name,
+                  "Version": version,
+                  "Organization": productOrg
           )
         }
       }
@@ -106,6 +106,7 @@ subprojects {
   javadoc.classpath += configurations.provided
 
   javadoc {
+    destinationDir = file("$buildDir/javadoc")
     options.addStringOption('Xdoclint:none', '-quiet')
     options.encoding = 'UTF-8'
   }
