@@ -64,9 +64,6 @@ subprojects {
         }
       }
     }
-    tasks.withType(Javadoc).each { jdoc ->
-      jdoc.destinationDir = file("$buildDir/javadoc")
-    }
   })
 
   configurations {
@@ -109,6 +106,7 @@ subprojects {
   javadoc.classpath += configurations.provided
 
   javadoc {
+    destinationDir = file("$buildDir/javadoc")
     options.addStringOption('Xdoclint:none', '-quiet')
     options.encoding = 'UTF-8'
   }
