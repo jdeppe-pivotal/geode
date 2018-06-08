@@ -30,21 +30,20 @@ buildscript {
     classpath "me.champeau.gradle:jmh-gradle-plugin:0.3.1"
     classpath "com.pedjak.gradle.plugins:dockerized-test:0.5.6.2-SNAPSHOT"
     classpath 'com.github.ben-manes:gradle-versions-plugin:0.17.0'
+    classpath "org.sonarqube:org.sonarqube.gradle.plugin:2.6.2"
+    //classpath "com.gradle:build-scan-plugin:1.13.4"
   }
 }
 
-plugins {
-  id 'com.gradle.build-scan' version '1.13.4'
-  id "org.sonarqube" version "2.6.2"
-}
-
-buildScan {
-  server = "https://5gyf3c5bixnbgcvqoz6db2ibie-trial.gradle.com"
-  termsOfServiceUrl = 'https://gradle.com/terms-of-service'
-  termsOfServiceAgree = 'yes'
-}
+//buildScan {
+//  server = "https://5gyf3c5bixnbgcvqoz6db2ibie-trial.gradle.com"
+//  termsOfServiceUrl = 'https://gradle.com/terms-of-service'
+//  termsOfServiceAgree = 'yes'
+//}
 
 apply plugin: 'wrapper'
+apply plugin: 'org.sonarqube'
+//apply plugin: 'com.gradle.build-scan'
 
 wrapper {
   gradleVersion = minimumGradleVersion
