@@ -38,6 +38,8 @@
  *                       The default is 'root'.
  */
 
+ import java.nio.file.Paths
+
 def dockerConfig = {
   maxParallelForks = dunitParallelForks.toInteger()
 
@@ -95,7 +97,7 @@ def dockerConfig = {
       def cmdList = cmd.getCmd()
       def matcher = (cmdList[cmdList.length - 1] =~ /.*Executor (\d*).*/)
 
-      def workdir = new File(cmd.getWorkingDir() + matcher[0][1])
+      def workdir = new File(Paths.get(cmd.getWorkingDir(), "build", "$name" + matcher[0][1]).toString())
       workdir.mkdirs()
       cmd.withWorkingDir(workdir.toString())
 
