@@ -149,6 +149,7 @@ dependencies {
   integrationTestCompile('org.apache.httpcomponents:httpclient:' + project.'httpclient.version')
   integrationTestCompile('javax.annotation:javax.annotation-api:' + project.'javax-annotation.version')
 
+  integrationTestRuntime project(':geode-core').sourceSets.main.output
 
   distributedTestCompile(project(':geode-core'))
   distributedTestCompile(project(':extensions:session-testing-war'))

@@ -23,6 +23,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.Logger;
 import org.json.JSONArray;
@@ -206,25 +208,22 @@ public abstract class AbstractBaseController implements InitializingBean {
     }
   }
 
-  Collection<PdxInstance> convertJsonArrayIntoPdxCollection(final String jsonArray) {
-    JSONArray jsonArr = null;
+  Collection<PdxInstance> convertJsonArrayIntoPdxCollection(final String rawJson) {
     try {
-      jsonArr = new JSONArray(jsonArray);
-      Collection<PdxInstance> pdxInstances = new ArrayList<PdxInstance>();
+      ObjectMapper mapper = new ObjectMapper();
+      JsonNode jsonArray = mapper.readTree(rawJson);
 
-      for (int index = 0; index < jsonArr.length(); index++) {
-        // String element = jsonArr.getJSONObject(i).toString();
-        // String element = jsonArr.getString(i);
-        Object object = jsonArr.get(index);
-        String element = object.toString();
+      Collection<PdxInstance> pdxInstances = new ArrayList<>();
 
-        PdxInstance pi = convert(element);
+      Iterator<JsonNode> iterator = jsonArray.iterator();
+      while (iterator.hasNext()) {
+        PdxInstance pi = convert(mapper.writeValueAsString(iterator.next()));
         pdxInstances.add(pi);
       }
       return pdxInstances;
-
-    } catch (JSONException je) {
-      throw new MalformedJsonException("Json document specified in request body is not valid!", je);
+    } catch (IOException ex) {
+      throw new MalformedJsonException(
+          "Json document specified in request body is not a valid array!", ex);
     }
   }
 
@@ -759,6 +758,9 @@ public abstract class AbstractBaseController implements InitializingBean {
   }
 
   Object[] jsonToObjectArray(final String arguments) {
+    if (true) {
+      return null;
+    }
     final JSONTypes jsonType = validateJsonAndFindType(arguments);
     if (JSONTypes.JSON_ARRAY.equals(jsonType)) {
       try {
