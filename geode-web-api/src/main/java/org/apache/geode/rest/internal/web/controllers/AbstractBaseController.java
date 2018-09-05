@@ -725,7 +725,15 @@ public abstract class AbstractBaseController implements InitializingBean {
   }
 
   String convertErrorAsJson(Throwable t) {
-    return String.format("{\"message\" : \"%1$s\"}", t.getMessage());
+    String message;
+    if (t.getCause() != null && t.getCause().getMessage() != null
+        && !(t instanceof GemfireRestException)) {
+      message = t.getCause().getMessage();
+    } else {
+      message = t.getMessage();
+    }
+
+    return String.format("{\"message\" : \"%1$s\"}", message);
   }
 
   private Map<?, ?> convertJsonToMap(final String jsonString) {
