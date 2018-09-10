@@ -758,19 +758,21 @@ public abstract class AbstractBaseController implements InitializingBean {
   }
 
   Object[] jsonToObjectArray(final String arguments) {
-    if (true) {
-      return null;
-    }
     final JSONTypes jsonType = validateJsonAndFindType(arguments);
+    ObjectMapper mapper = new ObjectMapper();
     if (JSONTypes.JSON_ARRAY.equals(jsonType)) {
       try {
-        JSONArray jsonArray = new JSONArray(arguments);
-        Object[] args = new Object[jsonArray.length()];
-        for (int index = 0; index < jsonArray.length(); index++) {
-          args[index] = jsonToObject(jsonArray.get(index).toString());
+        JsonNode jsonArray = mapper.readTree(arguments);
+        if (!jsonArray.isArray()) {
+          throw new MalformedJsonException("Json document specified in request body is not an array!");
+        }
+
+        Object[] args = new Object[jsonArray.size()];
+        for (int index = 0; index < jsonArray.size(); index++) {
+          args[index] = jsonToObject(mapper.writeValueAsString(jsonArray.get(index)));
         }
         return args;
-      } catch (JSONException je) {
+      } catch (IOException je) {
         throw new MalformedJsonException("Json document specified in request body is not valid!",
             je);
       }
