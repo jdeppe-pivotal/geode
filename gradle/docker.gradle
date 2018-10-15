@@ -38,7 +38,6 @@
  *                       The default is 'root'.
  */
 
-
 if (project.hasProperty('parallelDunit')) {
   def pwd = System.getenv('PWD')
   def geodeDir = new File(pwd).getCanonicalPath()
@@ -134,7 +133,7 @@ def dockerConfig = {
   }
 }
 subprojects {
-  apply plugin: 'com.github.pedjak.dockerized-test'
+  apply plugin: 'org.apache.geode.test.docker.docker-plugin'
 
   if (project.hasProperty('parallelDunit')) {
     uiTest.configure(dockerConfig)
