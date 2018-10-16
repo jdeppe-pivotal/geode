@@ -65,13 +65,13 @@ public class DockerProcess extends Process {
           } catch (Exception e) {
             LOGGER.debug("Error by detaching streams", e);
           } finally {
-//            try {
-//              invokeIfNotNull(afterContainerStop, containerId, dockerClient);
-//            } catch (Exception e) {
-//              LOGGER.debug("Exception thrown at invoking afterContainerStop", e);
-//            } finally {
+            try {
+              dockerClient.removeContainerCmd(containerId).exec();
+            } catch (Exception e) {
+              LOGGER.debug("Exception thrown when removing container", e);
+            } finally {
               finished.countDown();
-//            }
+            }
           }
         }
       };
