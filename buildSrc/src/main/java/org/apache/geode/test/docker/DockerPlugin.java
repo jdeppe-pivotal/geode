@@ -23,16 +23,21 @@ import org.gradle.initialization.DefaultBuildCancellationToken;
 import org.gradle.internal.concurrent.DefaultExecutorFactory;
 import org.gradle.internal.concurrent.ExecutorFactory;
 import org.gradle.internal.operations.BuildOperationExecutor;
+import org.gradle.internal.remote.internal.IncomingConnector;
+import org.gradle.internal.remote.internal.hub.MessageHubBackedServer;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.internal.time.Clock;
 import org.gradle.internal.work.WorkerLeaseRegistry;
 import org.gradle.process.internal.JavaExecHandleFactory;
 import org.gradle.process.internal.worker.DefaultWorkerProcessFactory;
 
+import org.apache.geode.test.docker.messaging.MessageServer;
+
 public class DockerPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project project) {
+
     for (Iterator<Task> i = project.getTasks().iterator(); i.hasNext(); ) {
       Task task = i.next();
       if (task instanceof Test) {
@@ -62,6 +67,8 @@ public class DockerPlugin implements Plugin<Project> {
               executor, buildCancellationToken);
 
       setExecHandler(processFactory, execHandleFactory);
+
+      setMessageServer(processFactory);
 
       DefaultTestExecuter testExecuter = new DefaultTestExecuter(
           processFactory,
@@ -105,6 +112,40 @@ public class DockerPlugin implements Plugin<Project> {
     } catch (NoSuchFieldException | IllegalAccessException e) {
       e.printStackTrace();
       throw new GradleException("Unable to set exec handler", e);
+    }
+  }
+
+  private void setMessageServer(DefaultWorkerProcessFactory processFactory) {
+    try {
+      Field f = processFactory.getClass().getDeclaredField("server");
+      f.setAccessible(true);
+
+      Field modifiersField = Field.class.getDeclaredField("modifiers");
+      modifiersField.setAccessible(true);
+      modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
+
+      MessageHubBackedServer server = (MessageHubBackedServer) f.get(processFactory);
+      IncomingConnector incomingConnector = getPrivateField(server, "connector");
+      ExecutorFactory executorFactory = getPrivateField(server, "executorFactory");
+      MessageServer newServer = new MessageServer(incomingConnector, executorFactory);
+
+      f.set(processFactory, newServer);
+      f.setAccessible(false);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      e.printStackTrace();
+      throw new GradleException("Unable to set message server", e);
+    }
+  }
+
+  private <T> T getPrivateField(Object obj, String fieldName) {
+    Field f;
+    try {
+      f = obj.getClass().getDeclaredField(fieldName);
+      f.setAccessible(true);
+
+      return (T) f.get(obj);
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      throw new GradleException("Unable to get field " + fieldName);
     }
   }
 
