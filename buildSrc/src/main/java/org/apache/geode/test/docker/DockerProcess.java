@@ -67,6 +67,7 @@ public class DockerProcess extends Process {
           } finally {
             try {
               dockerClient.removeContainerCmd(containerId).exec();
+              dockerClient.close();
             } catch (Exception e) {
               LOGGER.debug("Exception thrown when removing container", e);
             } finally {

@@ -17,6 +17,8 @@ import org.gradle.api.internal.project.DefaultProject;
 import org.gradle.api.internal.tasks.testing.JvmTestExecutionSpec;
 import org.gradle.api.internal.tasks.testing.TestExecuter;
 import org.gradle.api.internal.tasks.testing.detection.DefaultTestExecuter;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.testing.Test;
 import org.gradle.initialization.BuildCancellationToken;
 import org.gradle.initialization.DefaultBuildCancellationToken;
@@ -34,6 +36,8 @@ import org.gradle.process.internal.worker.DefaultWorkerProcessFactory;
 import org.apache.geode.test.docker.messaging.MessageServer;
 
 public class DockerPlugin implements Plugin<Project> {
+
+  private static final Logger LOGGER = Logging.getLogger(DockerPlugin.class);
 
   @Override
   public void apply(Project project) {
@@ -53,6 +57,11 @@ public class DockerPlugin implements Plugin<Project> {
       DockerPluginExtension
           extension =
           (DockerPluginExtension) x.getExtensions().getByName("docker");
+
+      if (extension.getImage() == null) {
+        return;
+      }
+      LOGGER.info("Applying docker plugin to " + test.getName());
 
       ServiceRegistry registry = get(x, "getServices");
 
