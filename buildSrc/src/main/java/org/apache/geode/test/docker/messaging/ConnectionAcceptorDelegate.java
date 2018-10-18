@@ -29,7 +29,12 @@ public class ConnectionAcceptorDelegate implements ConnectionAcceptor {
           for (Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces(); nics.hasMoreElements(); ) {
             NetworkInterface nic = nics.nextElement();
             if (nic.isUp() && !nic.isLoopback()) {
-              nic.getInterfaceAddresses().forEach(i -> remoteAddresses.add(i.getAddress()));
+              nic.getInterfaceAddresses().forEach(i -> {
+                InetAddress address = i.getAddress();
+                if (!address.isLinkLocalAddress()) {
+                  remoteAddresses.add(address);
+                }
+              });
             }
           }
         } catch (SocketException e) {

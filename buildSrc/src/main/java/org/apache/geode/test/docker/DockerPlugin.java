@@ -41,7 +41,6 @@ public class DockerPlugin implements Plugin<Project> {
 
   @Override
   public void apply(Project project) {
-
     for (Iterator<Task> i = project.getTasks().iterator(); i.hasNext(); ) {
       Task task = i.next();
       if (task instanceof Test) {

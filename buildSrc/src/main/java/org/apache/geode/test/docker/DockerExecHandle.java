@@ -417,7 +417,7 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
           .withStdInOnce(true)
           .withWorkingDir(directory.getAbsolutePath());
 
-      createCmd.withEnv(getEnv());
+//      createCmd.withEnv(getEnv());
 
       String user = extension.getUser();
       if (user != null) {
@@ -429,7 +429,7 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
       cmdLine.addAll(arguments);
       createCmd.withCmd(cmdLine);
 
-//      invokeIfNotNull(extension.getBeforeContainerCreate(), createCmd, client);
+      invokeIfNotNull(extension.getBeforeContainerCreate(), createCmd, client);
       String containerId = createCmd.exec().getId();
 //      invokeIfNotNull(extension.getAfterContainerCreate(), containerId, client);
 //
@@ -473,8 +473,8 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
   }
 
   private void bindVolumes(CreateContainerCmd cmd) {
-    List<Volume> volumes = new ArrayList<Volume>();
-    List<Bind> binds = new ArrayList<Bind>();
+    List<Volume> volumes = new ArrayList<>();
+    List<Bind> binds = new ArrayList<>();
     for (Iterator it = extension.getVolumes().entrySet().iterator(); it.hasNext(); ) {
       Map.Entry<Object, Object> e = (Map.Entry<Object, Object>) it.next();
       Volume volume = new Volume(e.getValue().toString());
