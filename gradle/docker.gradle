@@ -62,6 +62,8 @@ def dockerConfig = {
     // specify the user for starting Gradle test worker within the container.
     user = dunitDockerUser
 
+    env << 'GEODE_HOME'
+
     beforeContainerCreate = { cmd, client ->
       def javaHomeIdx = -1
       def pathIdx = -1

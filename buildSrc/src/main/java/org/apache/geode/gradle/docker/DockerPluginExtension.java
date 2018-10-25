@@ -17,7 +17,9 @@
 
 package org.apache.geode.gradle.docker;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import groovy.lang.Closure;
@@ -25,6 +27,7 @@ import groovy.lang.Closure;
 public class DockerPluginExtension {
   private String image;
   private Map<String, String> volumes = new HashMap<>();
+  private List<String> env = new ArrayList<>();
   private String user;
   private Closure beforeContainerCreate;
   private Closure afterContainerCreate;
@@ -33,6 +36,14 @@ public class DockerPluginExtension {
   private Closure afterContainerStop;
 
   public DockerPluginExtension() {
+  }
+
+  public List<String> getEnv() {
+    return env;
+  }
+
+  public void setEnv(String key) {
+    env.add(key);
   }
 
   public String getImage() {

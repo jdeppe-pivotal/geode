@@ -149,7 +149,13 @@ public class DockerPlugin implements Plugin<Project> {
       modifiersField.setAccessible(true);
       modifiersField.setInt(f, f.getModifiers() & ~Modifier.FINAL);
 
-      MessageHubBackedServer server = (MessageHubBackedServer) f.get(processFactory);
+      Object serverObject = f.get(processFactory);
+      if (!(serverObject instanceof MessageHubBackedServer)) {
+        LOGGER.debug("Process factory 'server' is not a MessageHubBackedServer but a "
+            + serverObject.getClass().getName());
+        return;
+      }
+      MessageHubBackedServer server = (MessageHubBackedServer) serverObject;
       IncomingConnector incomingConnector = getPrivateField(server, "connector");
       ExecutorFactory executorFactory = getPrivateField(server, "executorFactory");
       MessageServer newServer = new MessageServer(incomingConnector, executorFactory);

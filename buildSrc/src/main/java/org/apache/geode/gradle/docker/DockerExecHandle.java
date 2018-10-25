@@ -276,7 +276,6 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
       }
       setState(ExecHandleState.STARTING);
 
-//            execHandleRunner = new DockerExecHandleRunner(this, new CompositeStreamsHandler(), processLauncher, executor);
       execHandleRunner =
           new DockerExecHandleRunner(this, new CompositeStreamsHandler(),
               executor);
@@ -415,10 +414,7 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
           .withStdinOpen(true)
           .withWorkingDir(directory.getAbsolutePath());
 
-      // On Windows this creates an environment construct > 7000 chars which results in the
-      // container not able to start. If, in the future, we need env variables we should
-      // explicitly specify which ones to pass through and set them here.
-      // createCmd.withEnv(getEnv());
+      createCmd.withEnv(getEnv());
 
       String user = extension.getUser();
       if (user != null) {
@@ -463,8 +459,12 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
 
   private List<String> getEnv() {
     List<String> env = new ArrayList<>();
-    for (Map.Entry<String, String> e : environment.entrySet()) {
-      env.add(e.getKey() + "=" + e.getValue());
+
+    for (String wantEnv : extension.getEnv()) {
+      String outerEnvValue = environment.get(wantEnv);
+      if (outerEnvValue != null) {
+        env.add(wantEnv + "=" + outerEnvValue);
+      }
     }
     return env;
   }
