@@ -25,8 +25,7 @@ import org.gradle.api.logging.Logging;
 import org.gradle.process.internal.StreamsHandler;
 
 public class DockerExecHandleRunner implements Runnable {
-  private static final Logger
-      LOGGER =
+  private static final Logger LOGGER =
       Logging.getLogger(org.gradle.process.internal.ExecHandleRunner.class);
 
   private final DockerExecHandle execHandle;

@@ -102,7 +102,7 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
   private final StreamsHandler outputHandler;
   private final StreamsHandler inputHandler;
   private final boolean redirectErrorStream;
-//  private final ProcessLauncher processLauncher;
+  //  private final ProcessLauncher processLauncher;
   private int timeoutMillis;
   private boolean daemon;
 
@@ -134,12 +134,12 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
 
   private DockerPluginExtension extension;
 
-  DockerExecHandle(DockerPluginExtension extension, String displayName, File directory, String command, List<String> arguments,
-                   Map<String, String> environment, StreamsHandler outputHandler,
-                   StreamsHandler inputHandler,
+  DockerExecHandle(DockerPluginExtension extension, String displayName, File directory,
+                   String command, List<String> arguments, Map<String, String> environment,
+                   StreamsHandler outputHandler, StreamsHandler inputHandler,
                    List<ExecHandleListener> listeners, boolean redirectErrorStream,
-                   int timeoutMillis, boolean daemon,
-                   Executor executor, BuildCancellationToken buildCancellationToken) {
+                   int timeoutMillis, boolean daemon, Executor executor,
+                   BuildCancellationToken buildCancellationToken) {
     this.extension = extension;
     this.displayName = displayName;
     this.directory = directory;
@@ -156,9 +156,8 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
     this.stateChanged = lock.newCondition();
     this.state = ExecHandleState.INIT;
     this.buildCancellationToken = buildCancellationToken;
-//    processLauncher = NativeServices.getInstance().get(ProcessLauncher.class);
     shutdownHookAction = new ExecHandleShutdownHookAction(this);
-    broadcast = new ListenerBroadcast<ExecHandleListener>(ExecHandleListener.class);
+    broadcast = new ListenerBroadcast<>(ExecHandleListener.class);
     broadcast.addAll(listeners);
   }
 
@@ -414,10 +413,12 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
       CreateContainerCmd createCmd = client.createContainerCmd(extension.getImage())
           .withTty(false)
           .withStdinOpen(true)
-//          .withStdInOnce(true)
           .withWorkingDir(directory.getAbsolutePath());
 
-//      createCmd.withEnv(getEnv());
+      // On Windows this creates an environment construct > 7000 chars which results in the
+      // container not able to start. If, in the future, we need env variables we should
+      // explicitly specify which ones to pass through and set them here.
+      // createCmd.withEnv(getEnv());
 
       String user = extension.getUser();
       if (user != null) {
@@ -431,11 +432,7 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
 
       invokeIfNotNull(extension.getBeforeContainerCreate(), createCmd, client);
       String containerId = createCmd.exec().getId();
-//      invokeIfNotNull(extension.getAfterContainerCreate(), containerId, client);
-//
-//      invokeIfNotNull(extension.getBeforeContainerStart(), containerId, client);
       client.startContainerCmd(containerId).exec();
-//      invokeIfNotNull(extension.getAfterContainerStart(), containerId, client);
 
       if (!client.inspectContainerCmd(containerId).exec().getState().getRunning()) {
         throw new GradleException("Container " + containerId + " not running!");

@@ -79,9 +79,9 @@ public class DockerPlugin implements Plugin<Project> {
       }
       LOGGER.info("Applying docker plugin to " + test.getName());
 
-      ServiceRegistry registry = get(x, "getServices");
+      ServiceRegistry registry = getReflectively(x, "getServices");
 
-      DefaultWorkerProcessFactory processFactory = get(x, "getProcessBuilderFactory");
+      DefaultWorkerProcessFactory processFactory = getReflectively(x, "getProcessBuilderFactory");
 
       ExecutorFactory executorFactory = new DefaultExecutorFactory();
       Executor executor = executorFactory.create("Docker container link");
@@ -97,14 +97,14 @@ public class DockerPlugin implements Plugin<Project> {
 
       DefaultTestExecuter testExecuter = new DefaultTestExecuter(
           processFactory,
-          get(x, "getActorFactory"),
-          get(x, "getModuleRegistry"),
+          getReflectively(x, "getActorFactory"),
+          getReflectively(x, "getModuleRegistry"),
           registry.get(WorkerLeaseRegistry.class),
           registry.get(BuildOperationExecutor.class),
           registry.get(StartParameter.class).getMaxWorkerCount(),
           registry.get(Clock.class),
           registry.get(DocumentationRegistry.class),
-          get(x, "getFilter"));
+          getReflectively(x, "getFilter"));
 
       setTestExecuter((Test) x, testExecuter);
     });
@@ -112,11 +112,11 @@ public class DockerPlugin implements Plugin<Project> {
 
   private void setTestExecuter(Test test, TestExecuter<JvmTestExecutionSpec> executer) {
     try {
-      Method m = test.getClass().getDeclaredMethod("testExecuter", TestExecuter.class);
+      Method m = getNamedMethod(test, "setTestExecuter", TestExecuter.class);
       m.setAccessible(true);
       m.invoke(test, executer);
       m.setAccessible(false);
-    } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+    } catch (IllegalAccessException | InvocationTargetException e) {
       e.printStackTrace();
       throw new GradleException("Unable to set test executer", e);
     }
@@ -174,12 +174,12 @@ public class DockerPlugin implements Plugin<Project> {
     }
   }
 
-  private <T> T get(Object test, String methodName) {
+  private Method getNamedMethod(Object test, String methodName, Class<?>... args) {
     Method getterMethod = null;
     Class<?> candidate = test.getClass();
     while (getterMethod == null && candidate != Object.class) {
       try {
-        getterMethod = candidate.getDeclaredMethod(methodName);
+        getterMethod = candidate.getDeclaredMethod(methodName, args);
       } catch (NoSuchMethodException e) {
         candidate = candidate.getSuperclass();
       }
@@ -188,6 +188,12 @@ public class DockerPlugin implements Plugin<Project> {
     if (getterMethod == null) {
       throw new GradleException("Unable to find method " + methodName);
     }
+
+    return getterMethod;
+  }
+
+  private <T> T getReflectively(Object test, String methodName) {
+    Method getterMethod = getNamedMethod(test, methodName);
 
     try {
       boolean accessibility = getterMethod.isAccessible();

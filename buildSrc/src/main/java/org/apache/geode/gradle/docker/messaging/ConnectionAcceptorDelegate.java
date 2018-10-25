@@ -43,7 +43,8 @@ public class ConnectionAcceptorDelegate implements ConnectionAcceptor {
       if (address == null) {
         List<InetAddress> remoteAddresses = new ArrayList<>();
         try {
-          for (Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces(); nics.hasMoreElements(); ) {
+          for (Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
+               nics.hasMoreElements(); ) {
             NetworkInterface nic = nics.nextElement();
             if (nic.isUp() && !nic.isLoopback()) {
               nic.getInterfaceAddresses().forEach(i -> {

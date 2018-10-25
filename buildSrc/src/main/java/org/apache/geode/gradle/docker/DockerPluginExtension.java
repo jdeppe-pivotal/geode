@@ -33,7 +33,6 @@ public class DockerPluginExtension {
   private Closure afterContainerStop;
 
   public DockerPluginExtension() {
-//    afterContainerStop = () -> { };
   }
 
   public String getImage() {

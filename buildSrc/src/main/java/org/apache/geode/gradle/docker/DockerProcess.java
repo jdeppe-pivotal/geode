@@ -39,7 +39,6 @@ public class DockerProcess extends Process {
   private static final Logger LOGGER = Logging.getLogger(DockerProcess.class);
   private final DockerClient dockerClient;
   private final String containerId;
-//  private final Closure afterContainerStop;
 
   private final PipedOutputStream stdInWriteStream = new PipedOutputStream();
   private final PipedInputStream stdOutReadStream = new PipedInputStream();
@@ -80,7 +79,7 @@ public class DockerProcess extends Process {
             stdOutWriteStream.close();
             stdErrWriteStream.close();
           } catch (Exception e) {
-            LOGGER.debug("Error by detaching streams", e);
+            LOGGER.debug("Error detaching streams", e);
           } finally {
             try {
               dockerClient.removeContainerCmd(containerId).exec();
@@ -97,7 +96,6 @@ public class DockerProcess extends Process {
   public DockerProcess(final DockerClient dockerClient, final String containerId) throws Exception {
     this.dockerClient = dockerClient;
     this.containerId = containerId;
-//    this.afterContainerStop = afterContainerStop;
     attachStreams();
     dockerClient.waitContainerCmd(containerId).exec(waitContainerResultCallback);
   }
@@ -110,8 +108,8 @@ public class DockerProcess extends Process {
         .withStdIn(stdInReadStream)
         .exec(attachContainerResultCallback);
     if (!attachContainerResultCallback.awaitStarted(10, TimeUnit.SECONDS)) {
-      LOGGER.warn("Not attached to container " + containerId + " within 10secs");
-      throw new RuntimeException("Not attached to container " + containerId + " within 10secs");
+      LOGGER.warn("Not attached to container " + containerId + " within 10 seconds");
+      throw new RuntimeException("Not attached to container " + containerId + " within 10 seconds");
     }
   }
 
@@ -139,7 +137,7 @@ public class DockerProcess extends Process {
   @Override
   public int exitValue() {
     if (finished.getCount() > 0) {
-      throw new IllegalThreadStateException("docker process still running");
+      throw new IllegalThreadStateException("Docker process still running");
     }
     return exitCode.get();
   }
