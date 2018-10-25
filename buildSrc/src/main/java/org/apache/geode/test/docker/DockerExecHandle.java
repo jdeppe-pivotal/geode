@@ -414,7 +414,7 @@ public class DockerExecHandle implements ExecHandle, ProcessSettings {
       CreateContainerCmd createCmd = client.createContainerCmd(extension.getImage())
           .withTty(false)
           .withStdinOpen(true)
-          .withStdInOnce(true)
+//          .withStdInOnce(true)
           .withWorkingDir(directory.getAbsolutePath());
 
 //      createCmd.withEnv(getEnv());
