@@ -42,10 +42,16 @@ public class ConnectionAcceptorDelegate implements ConnectionAcceptor {
     synchronized (delegate) {
       if (address == null) {
         List<InetAddress> remoteAddresses = new ArrayList<>();
+        Enumeration<NetworkInterface> nics;
         try {
-          for (Enumeration<NetworkInterface> nics = NetworkInterface.getNetworkInterfaces();
-               nics.hasMoreElements(); ) {
-            NetworkInterface nic = nics.nextElement();
+          nics = NetworkInterface.getNetworkInterfaces();
+        } catch (SocketException e) {
+          e.printStackTrace();
+          return null;
+        }
+        for (; nics.hasMoreElements(); ) {
+          NetworkInterface nic = nics.nextElement();
+          try {
             if (nic.isUp() && !nic.isLoopback()) {
               nic.getInterfaceAddresses().forEach(i -> {
                 InetAddress address = i.getAddress();
@@ -54,9 +60,9 @@ public class ConnectionAcceptorDelegate implements ConnectionAcceptor {
                 }
               });
             }
+          } catch (SocketException e) {
+            // Ignored because this nic probably disappeared
           }
-        } catch (SocketException e) {
-          e.printStackTrace();
         }
         MultiChoiceAddress originalAddress = (MultiChoiceAddress) delegate.getAddress();
         address = new MultiChoiceAddress(originalAddress.getCanonicalAddress(),
