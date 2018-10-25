@@ -1,4 +1,4 @@
-package org.apache.geode.test.docker.messaging;
+package org.apache.geode.gradle.docker.messaging;
 
 import java.net.InetAddress;
 import java.net.NetworkInterface;

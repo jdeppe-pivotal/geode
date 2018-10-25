@@ -1,4 +1,4 @@
-package org.apache.geode.test.docker.messaging;
+package org.apache.geode.gradle.docker.messaging;
 
 import org.gradle.api.Action;
 import org.gradle.internal.concurrent.ExecutorFactory;

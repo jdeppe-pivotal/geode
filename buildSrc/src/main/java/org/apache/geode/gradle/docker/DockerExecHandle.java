@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.apache.geode.test.docker;
+package org.apache.geode.gradle.docker;
 
 import static java.lang.String.format;
 

@@ -1,4 +1,4 @@
-package org.apache.geode.test.docker;
+package org.apache.geode.gradle.docker;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -33,7 +33,7 @@ import org.gradle.internal.work.WorkerLeaseRegistry;
 import org.gradle.process.internal.JavaExecHandleFactory;
 import org.gradle.process.internal.worker.DefaultWorkerProcessFactory;
 
-import org.apache.geode.test.docker.messaging.MessageServer;
+import org.apache.geode.gradle.docker.messaging.MessageServer;
 
 public class DockerPlugin implements Plugin<Project> {
 

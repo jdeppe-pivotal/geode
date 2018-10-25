@@ -133,7 +133,7 @@ def dockerConfig = {
   }
 }
 subprojects {
-  apply plugin: 'org.apache.geode.test.docker.docker-plugin'
+  apply plugin: 'org.apache.geode.gradle.docker.docker-plugin'
 
   if (project.hasProperty('parallelDunit')) {
     uiTest.configure(dockerConfig)

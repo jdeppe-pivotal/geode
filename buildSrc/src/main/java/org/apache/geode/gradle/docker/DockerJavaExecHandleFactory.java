@@ -1,4 +1,4 @@
-package org.apache.geode.test.docker;
+package org.apache.geode.gradle.docker;
 
 import java.util.concurrent.Executor;
 
