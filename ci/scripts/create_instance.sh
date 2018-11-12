@@ -136,4 +136,6 @@ else
   winrm -hostname ${INSTANCE_IP_ADDRESS} -username geode -password "${PASSWORD}" \
     -https -insecure -port 5986 \
     "powershell -command \"&{ mkdir c:\users\geode\.ssh -force; set-content -path c:\users\geode\.ssh\authorized_keys -encoding utf8 -value '${KEY}' }\""
+
+    echo "${PASSWORD}" > instance-data/instance-password
 fi

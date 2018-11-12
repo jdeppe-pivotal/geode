@@ -137,10 +137,12 @@ tests:
   CPUS: "16"
   RAM: "64"
   ARTIFACT_SLUG: windows-integrationtestfiles
-  DUNIT_PARALLEL_FORKS: "0"
+  DUNIT_PARALLEL_FORKS: "4"
+  DUNIT_DOCKER_IMAGE: "openjdk:geode"
   GRADLE_TASK: integrationTest
+  GRADLE_TASK_OPTIONS: "-Djava.io.tmpdir=C:/Temp"
   execute_test_timeout: 6h
-  PARALLEL_DUNIT: "false"
+  PARALLEL_DUNIT: "true"
 - name: "WindowsUnit"
   CPUS: "16"
   RAM: "64"

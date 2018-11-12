@@ -74,6 +74,13 @@
         "docker rmi microsoft/windowsservercore:1709",
         "docker rmi microsoft/nanoserver:1709",
 
+        "write-output '>>>>>>>>>> Customizing openjdk docker image <<<<<<<<<<'",
+        "mkdir docker",
+        "pushd docker",
+        "Set-Content -Path Dockerfile -value \"FROM openjdk:8u181-jdk-windowsservercore-1709`nRUN mkdir c:\\Temp`nRUN net user /add geode`nRUN net localgroup administrators geode /add\"",
+        "docker build -t openjdk:geode .",
+        "popd",
+
         "Set-Content -Path c:\\ProgramData\\docker\\config\\daemon.json -Value '{ \"hosts\": [\"tcp://0.0.0.0:2375\", \"npipe://\"] }'",
 
         "write-output '>>>>>>>>>> Cloning geode repo <<<<<<<<<<'",
