@@ -81,6 +81,10 @@ case $ARTIFACT_SLUG in
     ;;
 esac
 
+if [ -z "${DUNIT_DOCKER_IMAGE}" ]; then
+  DUNIT_DOCKER_IMAGE="\$(docker images --format '{{.Repository}}:{{.Tag}}')"
+fi
+
 GRADLE_ARGS=" \
     -PcompileJVM=${JAVA_BUILD_PATH} \
     -PcompileJVMVer=${JAVA_BUILD_VERSION} \
@@ -88,7 +92,7 @@ GRADLE_ARGS=" \
     -PtestJVMVer=${JAVA_TEST_VERSION} \
     ${PARALLEL_DUNIT} \
     ${DUNIT_PARALLEL_FORKS} \
-    -PdunitDockerImage=\$(docker images --format '{{.Repository}}:{{.Tag}}') \
+    -PdunitDockerImage=${DUNIT_DOCKER_IMAGE} \
     ${DEFAULT_GRADLE_TASK_OPTIONS} \
     ${GRADLE_TASK} \
     ${GRADLE_TASK_OPTIONS} \
