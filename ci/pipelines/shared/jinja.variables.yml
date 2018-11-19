@@ -140,7 +140,7 @@ tests:
   DUNIT_PARALLEL_FORKS: "4"
   DUNIT_DOCKER_IMAGE: "openjdk:geode"
   GRADLE_TASK: integrationTest
-  GRADLE_TASK_OPTIONS: "-Djava.io.tmpdir=C:/Temp"
+  GRADLE_TASK_OPTIONS: "-Djava.io.tmpdir=C:/Temp -DDOCKER_HOST=tcp://localhost:2375"
   execute_test_timeout: 6h
   PARALLEL_DUNIT: "true"
 - name: "WindowsUnit"
