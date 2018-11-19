@@ -69,23 +69,10 @@ def dockerConfig = {
       def javaHomeIdx = -1
       def pathIdx = -1
       def tmpEnv = []
-      cmd.getEnv().each { tmpEnv << it }
-
-      tmpEnv.eachWithIndex { x, j ->
-        if (x.startsWith('JAVA_HOME')) {
-          javaHomeIdx = j
+      cmd.getEnv().each {
+        if (x.startsWith('GEODE_HOME')) {
+          tmpEnv << it
         }
-        if (x.startsWith('PATH')) {
-          pathIdx = j
-        }
-      }
-
-      // Remove JAVA_HOME and PATH env variables - they might not be the same as the container needs
-      if (javaHomeIdx >= 0) {
-        tmpEnv[javaHomeIdx] = 'JAVA_HOME_REMOVED='
-      }
-      if (pathIdx >= 0) {
-        tmpEnv[pathIdx] = 'PATH_REMOVED='
       }
 
       if (project.hasProperty('testJVM') && !testJVM.trim().isEmpty()) {

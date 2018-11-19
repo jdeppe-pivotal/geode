@@ -421,7 +421,7 @@ public class DockerizedExecHandle implements ExecHandle, ProcessSettings {
           .withStdinOpen(true)
           .withWorkingDir(directory.getAbsolutePath());
 
-//      createCmd.withEnv(getEnv());
+      createCmd.withEnv(getEnv());
 
       String user = testExtension.getUser();
       if (user != null) {
