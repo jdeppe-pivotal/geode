@@ -70,7 +70,7 @@ def dockerConfig = {
       def pathIdx = -1
       def tmpEnv = []
       cmd.getEnv().each {
-        if (x.startsWith('GEODE_HOME')) {
+        if (it.startsWith('GEODE_HOME')) {
           tmpEnv << it
         }
       }
