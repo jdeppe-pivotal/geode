@@ -77,7 +77,7 @@
         "write-output '>>>>>>>>>> Customizing openjdk docker image <<<<<<<<<<'",
         "mkdir docker",
         "pushd docker",
-        "Set-Content -Path Dockerfile -value \"FROM openjdk:8u181-jdk-windowsservercore-1709`nRUN mkdir c:\\Temp`nRUN net user /add geode`nRUN net localgroup administrators geode /add`nmv c:\\ojdkbuild c:\\java8\"",
+        "Set-Content -Path Dockerfile -value \"FROM openjdk:8u181-jdk-windowsservercore-1709`nRUN mkdir c:\\Temp`nRUN net user /add geode`nRUN net localgroup administrators geode /add`nRUN mv c:\\ojdkbuild c:\\java8\"",
         "docker build -t openjdk:geode .",
         "popd",
 
