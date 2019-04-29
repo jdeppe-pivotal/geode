@@ -17,6 +17,7 @@ package org.apache.geode.management.api;
 
 import org.apache.geode.annotations.Experimental;
 import org.apache.geode.cache.configuration.CacheElement;
+import org.apache.geode.management.configuration.RuntimeCacheElement;
 
 /**
  * this is responsible for applying and persisting cache configuration changes on locators and/or
@@ -60,7 +61,8 @@ public interface ClusterManagementService {
    */
   ClusterManagementResult update(CacheElement config);
 
-  ClusterManagementResult list(CacheElement config);
+  <T extends CacheElement, R extends RuntimeCacheElement> ClusterManagementResult<R> list(
+      T config, Class<R> type);
 
   /**
    * Test to see if this instance of ClusterManagementService retrieved from the client side is
