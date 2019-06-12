@@ -53,6 +53,11 @@ public class GatewayReceiverMBean extends NotificationBroadcasterSupport
   }
 
   @Override
+  public String getHostnameForSenders() {
+    return bridge.getHostnameForSenders();
+  }
+
+  @Override
   public float getUpdateRequestsRate() {
     return bridge.getUpdateRequestsRate();
   }
@@ -206,5 +211,6 @@ public class GatewayReceiverMBean extends NotificationBroadcasterSupport
   public long getAverageBatchProcessingTime() {
     return bridge.getAverageBatchProcessingTime();
   }
+
 
 }

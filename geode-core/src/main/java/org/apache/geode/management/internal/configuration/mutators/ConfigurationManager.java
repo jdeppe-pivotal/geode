@@ -37,7 +37,7 @@ public interface ConfigurationManager<T extends CacheElement> {
 
   void delete(T config, CacheConfig existing);
 
-  List<? extends T> list(T filterConfig, CacheConfig existing);
+  List<? extends T> list(T filterConfig, CacheConfig existing, String group);
 
   T get(String id, CacheConfig existing);
 }

@@ -38,7 +38,7 @@ public class PdxManager implements ConfigurationManager<PdxType> {
   }
 
   @Override
-  public List<PdxType> list(PdxType filterConfig, CacheConfig existing) {
+  public List<PdxType> list(PdxType filterConfig, CacheConfig existing, String group) {
     return Collections.singletonList(existing.getPdx());
   }
 

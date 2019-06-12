@@ -241,7 +241,7 @@ public class LocatorClusterManagementService implements ClusterManagementService
     ClusterManagementResult result = new ClusterManagementResult();
 
     if (filter instanceof MemberConfig) {
-      List<? extends T> listResults = manager.list(filter, null);
+      List<? extends T> listResults = manager.list(filter, null, null);
       result.setResult(listResults);
       return result;
     }
@@ -254,7 +254,7 @@ public class LocatorClusterManagementService implements ClusterManagementService
     List<T> resultList = new ArrayList<>();
     for (String group : persistenceService.getGroups()) {
       CacheConfig currentPersistedConfig = persistenceService.getCacheConfig(group, true);
-      List<? extends T> listInGroup = manager.list(filter, currentPersistedConfig);
+      List<? extends T> listInGroup = manager.list(filter, currentPersistedConfig, group);
       for (T element : listInGroup) {
         if (group.equals(element.getConfigGroup()) || element instanceof MultiGroupCacheElement) {
           element.setGroup(group);

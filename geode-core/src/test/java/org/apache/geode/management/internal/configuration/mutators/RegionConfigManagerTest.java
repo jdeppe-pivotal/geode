@@ -48,7 +48,7 @@ public class RegionConfigManagerTest {
     ManagementService managementService = mock(ManagementService.class);
     doReturn(managementService).when(manager).getManagementService();
 
-    List<RuntimeRegionConfig> result = manager.list(filter, existing);
+    List<RuntimeRegionConfig> result = manager.list(filter, existing, null);
     assertThat(result.get(0).getEntryCount()).isEqualTo(-1);
   }
 }

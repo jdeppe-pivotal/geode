@@ -145,6 +145,10 @@ public class GatewayReceiverMBeanBridge extends ServerBridge {
     return eventsReceivedRate.getRate();
   }
 
+  public String getHostnameForSenders() {
+    return gatewayReceiver.getHostnameForSenders();
+  }
+
   protected void startServer() {
     addServer(getReceiverServer());
   }

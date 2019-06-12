@@ -65,7 +65,8 @@ public class MemberConfigManager implements ConfigurationManager<MemberConfig> {
   }
 
   @Override
-  public List<RuntimeMemberConfig> list(MemberConfig filter, CacheConfig existing) {
+  public List<RuntimeMemberConfig> list(MemberConfig filter, CacheConfig existing,
+      String group) {
     Set<DistributedMember> distributedMembers = getDistributedMembers(filter);
     if (distributedMembers.size() == 0) {
       return Collections.emptyList();

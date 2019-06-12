@@ -78,6 +78,20 @@ public class GatewayReceiverConfig extends CacheElement implements RestfulEndpoi
   @XmlAttribute(name = "manual-start")
   protected Boolean manualStart;
 
+  public GatewayReceiverConfig() {}
+
+  public GatewayReceiverConfig(GatewayReceiverConfig config) {
+    setGroup(config.getGroup());
+    gatewayTransportFilters = config.getGatewayTransportFilters();
+    startPort = config.getStartPort();
+    endPort = config.getEndPort();
+    bindAddress = config.getBindAddress();
+    maximumTimeBetweenPings = config.getMaximumTimeBetweenPings();
+    socketBufferSize = config.getSocketBufferSize();
+    hostnameForSenders = config.getHostnameForSenders();
+    manualStart = config.isManualStart();
+  }
+
   /**
    * Gets the value of the gatewayTransportFilters property.
    *

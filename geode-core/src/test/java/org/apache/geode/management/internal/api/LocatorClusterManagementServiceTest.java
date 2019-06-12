@@ -196,7 +196,7 @@ public class LocatorClusterManagementServiceTest {
     // even we are listing regions in one group, we still need to go through all the groups
     verify(persistenceService).getCacheConfig("cluster", true);
     verify(persistenceService).getCacheConfig("group1", true);
-    verify(regionManager, times(2)).list(any(), any());
+    verify(regionManager, times(2)).list(any(), any(), any());
   }
 
   @Test
@@ -211,7 +211,7 @@ public class LocatorClusterManagementServiceTest {
 
     List clusterRegions = Arrays.asList(region1);
     List group1Regions = Arrays.asList(region2);
-    doReturn(clusterRegions, group1Regions).when(regionManager).list(any(), any());
+    doReturn(clusterRegions, group1Regions).when(regionManager).list(any(), any(), any());
 
     // this is to make sure when 'cluster" is in one of the group, it will show
     // the cluster and the other group name

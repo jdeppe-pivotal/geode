@@ -88,6 +88,11 @@ public interface GatewayReceiverMXBean {
   int getOutoforderBatchesReceived();
 
   /**
+   * Returns the hostname used by the sender.
+   */
+  String getHostnameForSenders();
+
+  /**
    * Starts the gateway receiver.
    */
   @ResourceOperation(resource = Resource.CLUSTER, operation = Operation.MANAGE,
