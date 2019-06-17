@@ -24,12 +24,24 @@ public class GatewayReceiverConfigTest {
   private GatewayReceiverConfig receiver;
 
   @Before
-  public void before() throws Exception {
+  public void before() {
     receiver = new GatewayReceiverConfig();
   }
 
   @Test
-  public void getId() throws Exception {
+  public void CopyConstructorPersistsGroup() {
+    GatewayReceiverConfig gatewayReceiverConfigWithGroup = new GatewayReceiverConfig();
+    gatewayReceiverConfigWithGroup.setGroup("some-group");
+
+    GatewayReceiverConfig
+        gatewayReceiverConfigCopy =
+        new GatewayReceiverConfig(gatewayReceiverConfigWithGroup);
+    assertThat(gatewayReceiverConfigCopy.getGroup()).isEqualTo("some-group");
+    assertThat(gatewayReceiverConfigCopy.getId()).isEqualTo(gatewayReceiverConfigWithGroup.getId());
+  }
+
+  @Test
+  public void getId() {
     assertThat(receiver.getId()).isEqualTo("cluster");
 
     receiver.setGroup("group");
@@ -37,7 +49,7 @@ public class GatewayReceiverConfigTest {
   }
 
   @Test
-  public void getUri() throws Exception {
+  public void getUri() {
     assertThat(receiver.getUri()).isEqualTo("/gateways/receivers/cluster");
 
     receiver.setGroup("group");

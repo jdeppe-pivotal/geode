@@ -36,6 +36,7 @@ import org.apache.geode.distributed.internal.InternalConfigurationPersistenceSer
 import org.apache.geode.management.api.ClusterManagementResult;
 import org.apache.geode.management.api.ClusterManagementService;
 import org.apache.geode.management.client.ClusterManagementServiceBuilder;
+import org.apache.geode.management.configuration.RuntimeGatewayReceiverConfig;
 import org.apache.geode.test.junit.rules.LocatorStarterRule;
 
 @RunWith(SpringRunner.class)
@@ -70,14 +71,14 @@ public class GatewayManagementIntegrationTest {
   }
 
   @Test
-  public void listExisting() {
+  public void listGatewayReceiversOnACluster() {
     LocatorStarterRule locator =
         ((PlainLocatorContextLoader) context.getLocator()).getLocatorStartupRule();
-    InternalConfigurationPersistenceService cps =
+    InternalConfigurationPersistenceService configurationPersistenceService =
         locator.getLocator().getConfigurationPersistenceService();
 
     // manually create a gateway receiver in cluster group
-    cps.updateCacheConfig("cluster", cacheConfig -> {
+    configurationPersistenceService.updateCacheConfig("cluster", cacheConfig -> {
       GatewayReceiverConfig receiver = new GatewayReceiverConfig();
       receiver.setBindAddress("localhost");
       receiver.setManualStart(false);
@@ -88,23 +89,31 @@ public class GatewayManagementIntegrationTest {
 
     ClusterManagementResult results = client.list(receiver);
     assertThat(results.isSuccessful()).isTrue();
-    List<GatewayReceiverConfig> receivers =
-        results.getResult(GatewayReceiverConfig.class);
+    List<RuntimeGatewayReceiverConfig> receivers =
+        results.getResult(RuntimeGatewayReceiverConfig.class);
     assertThat(receivers.size()).isEqualTo(1);
-    GatewayReceiverConfig result = receivers.get(0);
+    RuntimeGatewayReceiverConfig result = receivers.get(0);
     assertThat(result.getBindAddress()).isEqualTo("localhost");
     assertThat(result.isManualStart()).isFalse();
     assertThat(result.getStartPort()).isEqualTo("5000");
+    assertThat(result.getId()).isEqualTo("cluster");
+    assertThat(result.getPort()).isNotEqualTo(0);
+    assertThat(result.getSenderCount()).isEqualTo(0);
+    assertThat(result.getSendersConnected()).isEqualTo(0);
 
     // manually removing the GWR so that it won't pollute other tests
-    cps.updateCacheConfig("cluster", cacheConfig -> {
+    configurationPersistenceService.updateCacheConfig("cluster", cacheConfig -> {
       cacheConfig.setGatewayReceiver(null);
       return cacheConfig;
     });
   }
 
+  //TODO: We need case where we actuallly connect senders so that these values are not 0 by default.
+//    assertThat(result.getSenderCount()).isEqualTo(1);
+//    assertThat(result.getSendersConnected()).isEqualTo(1);
+
   @Test
-  public void createWithBindAddress() throws Exception {
+  public void createWithBindAddress() {
     receiver.setBindAddress("test-mbpro");
     assertManagementResult(client.create(receiver)).failed()
         .hasStatusCode(ClusterManagementResult.StatusCode.ILLEGAL_ARGUMENT)
@@ -112,7 +121,7 @@ public class GatewayManagementIntegrationTest {
   }
 
   @Test
-  public void createWithHostName() throws Exception {
+  public void createWithHostName() {
     receiver.setHostnameForSenders("test-mbpro");
     assertManagementResult(client.create(receiver)).failed()
         .hasStatusCode(ClusterManagementResult.StatusCode.ILLEGAL_ARGUMENT)

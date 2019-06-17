@@ -34,7 +34,16 @@ import org.apache.geode.lang.Identifiable;
 @Experimental
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "class")
 public abstract class CacheElement implements Identifiable<String>, Serializable {
-  protected List<String> groups = new ArrayList<>();
+
+  protected CacheElement(CacheElement cacheElement) {
+    groups = cacheElement.groups;
+  }
+
+  protected CacheElement() {
+    groups = new ArrayList<>();
+  }
+
+  protected List<String> groups;
 
   public static <T extends Identifiable> boolean exists(List<T> list, String id) {
     return list.stream().anyMatch(o -> o.getId().equals(id));
