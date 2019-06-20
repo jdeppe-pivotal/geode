@@ -17,19 +17,13 @@ package org.apache.geode.management.configuration;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import org.apache.geode.cache.configuration.GatewayReceiverConfig;
 
 public class RuntimeGatewayReceiverConfig extends GatewayReceiverConfig {
 
-  private int port;
-
-  private int senderCount;
-
-  private List<String> sendersConnected;
-
-  private String memberId;
-
-  private String memberRef;
+  private List<MemberRuntimeInfo> members;
 
   public RuntimeGatewayReceiverConfig() {}
 
@@ -37,43 +31,76 @@ public class RuntimeGatewayReceiverConfig extends GatewayReceiverConfig {
     super(config);
   }
 
-  public String getMemberId() {
-    return memberId;
+  public List<MemberRuntimeInfo> getMembers() {
+    return members;
   }
 
-  public void setMemberId(String memberId) {
-    this.memberId = memberId;
+  public void setMembers(
+      List<MemberRuntimeInfo> members) {
+    this.members = members;
   }
 
-  public String getMemberRef() {
-    return memberRef;
-  }
+  public static class MemberRuntimeInfo {
+    private int port;
 
-  public void setMemberRef(String memberRef) {
-    this.memberRef = memberRef;
-  }
+    private int senderCount;
 
-  public int getPort() {
-    return port;
-  }
+    private List<String> sendersConnected;
 
-  public void setPort(int port) {
-    this.port = port;
-  }
+    private String memberId;
 
-  public int getSenderCount() {
-    return senderCount;
-  }
+    private String memberRef;
 
-  public void setSenderCount(int senderCount) {
-    this.senderCount = senderCount;
-  }
+    public MemberRuntimeInfo() {}
 
-  public List<String> getSendersConnected() {
-    return sendersConnected;
-  }
+    public MemberRuntimeInfo(int port, int senderCount,
+        List<String> sendersConnected, String memberId, String memberRef) {
+      this.port = port;
+      this.senderCount = senderCount;
+      this.sendersConnected = sendersConnected;
+      this.memberId = memberId;
+      this.memberRef = memberRef;
+    }
 
-  public void setSendersConnected(List<String> sendersConnected) {
-    this.sendersConnected = sendersConnected;
+    public String getMemberId() {
+      return memberId;
+    }
+
+    public void setMemberId(String memberId) {
+      this.memberId = memberId;
+    }
+
+    public String getMemberRef() {
+      return memberRef;
+    }
+
+    public void setMemberRef(String memberRef) {
+      this.memberRef = memberRef;
+    }
+
+    public int getPort() {
+      return port;
+    }
+
+    public void setPort(int port) {
+      this.port = port;
+    }
+
+    public int getSenderCount() {
+      return senderCount;
+    }
+
+    public void setSenderCount(int senderCount) {
+      this.senderCount = senderCount;
+    }
+
+    @JsonInclude
+    public List<String> getSendersConnected() {
+      return sendersConnected;
+    }
+
+    public void setSendersConnected(List<String> sendersConnected) {
+      this.sendersConnected = sendersConnected;
+    }
   }
 }

@@ -63,7 +63,6 @@ public class GatewayReceiverConfigManagerTest {
 
     when(gatewayReceiverMXBean.getPort()).thenReturn(5000);
     when(gatewayReceiverMXBean.getClientConnectionCount()).thenReturn(5);
-    when(gatewayReceiverMXBean.getBindAddress()).thenReturn("127.0.0.1");
     when(gatewayReceiverMXBean.getConnectedGatewaySenders())
         .thenReturn(new String[] {"senderOne", "senderTwo"});
 
@@ -76,11 +75,11 @@ public class GatewayReceiverConfigManagerTest {
 
     assertThat(result).hasSize(1);
     assertThat(result.get(0).getId()).isEqualTo("group1");
-    assertThat(result.get(0).getPort()).isEqualTo(5000);
-    assertThat(result.get(0).getBindAddress()).isEqualTo("127.0.0.1");
-    assertThat(result.get(0).getSendersConnected()).containsExactly("senderOne", "senderTwo");
-    assertThat(result.get(0).getMemberId()).isEqualTo("member1");
-    assertThat(result.get(0).getSenderCount()).isEqualTo(5);
+    assertThat(result.get(0).getMembers().get(0).getPort()).isEqualTo(5000);
+    assertThat(result.get(0).getMembers().get(0).getSendersConnected()).containsExactly("senderOne",
+        "senderTwo");
+    assertThat(result.get(0).getMembers().get(0).getMemberId()).isEqualTo("member1");
+    assertThat(result.get(0).getMembers().get(0).getSenderCount()).isEqualTo(5);
   }
 
 }

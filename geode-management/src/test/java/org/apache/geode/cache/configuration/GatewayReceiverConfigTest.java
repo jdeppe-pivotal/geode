@@ -33,8 +33,7 @@ public class GatewayReceiverConfigTest {
     GatewayReceiverConfig gatewayReceiverConfigWithGroup = new GatewayReceiverConfig();
     gatewayReceiverConfigWithGroup.setGroup("some-group");
 
-    GatewayReceiverConfig
-        gatewayReceiverConfigCopy =
+    GatewayReceiverConfig gatewayReceiverConfigCopy =
         new GatewayReceiverConfig(gatewayReceiverConfigWithGroup);
     assertThat(gatewayReceiverConfigCopy.getGroup()).isEqualTo("some-group");
     assertThat(gatewayReceiverConfigCopy.getId()).isEqualTo(gatewayReceiverConfigWithGroup.getId());

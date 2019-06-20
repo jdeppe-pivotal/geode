@@ -72,33 +72,30 @@ public class GatewayReceiverConfigManager implements ConfigurationManager<Gatewa
       return Collections.emptyList();
     }
 
-    List<RuntimeGatewayReceiverConfig> results = new ArrayList<>();
+    List<RuntimeGatewayReceiverConfig.MemberRuntimeInfo> memberResults = new ArrayList<>();
+    RuntimeGatewayReceiverConfig runtimeGatewayReceiverConfig =
+        new RuntimeGatewayReceiverConfig(gatewayReceiver);
 
     // Gather members for group
     Set<DistributedMember> members = getMembers(group);
 
-    if (members.size() > 0) {
-      for (DistributedMember member : members) {
-        GatewayReceiverMXBean receiverBean = getGatewayReceiverMXBean(member);
-        if (receiverBean != null) {
-          RuntimeGatewayReceiverConfig runtimeConfig =
-              new RuntimeGatewayReceiverConfig(gatewayReceiver);
-          runtimeConfig.setPort(receiverBean.getPort());
-          runtimeConfig.setBindAddress(receiverBean.getBindAddress());
-          runtimeConfig.setHostnameForSenders(receiverBean.getHostnameForSenders());
-          runtimeConfig.setSenderCount(receiverBean.getClientConnectionCount());
-          runtimeConfig
-              .setSendersConnected(Arrays.asList(receiverBean.getConnectedGatewaySenders()));
-          runtimeConfig.setMemberId(member.getId());
+    for (DistributedMember member : members) {
+      GatewayReceiverMXBean receiverBean = getGatewayReceiverMXBean(member);
+      if (receiverBean != null) {
+        RuntimeGatewayReceiverConfig.MemberRuntimeInfo memberRuntimeInfo =
+            new RuntimeGatewayReceiverConfig.MemberRuntimeInfo();
+        memberRuntimeInfo.setPort(receiverBean.getPort());
+        memberRuntimeInfo.setSenderCount(receiverBean.getClientConnectionCount());
+        memberRuntimeInfo
+            .setSendersConnected(Arrays.asList(receiverBean.getConnectedGatewaySenders()));
+        memberRuntimeInfo.setMemberId(member.getId());
 
-          results.add(runtimeConfig);
-        }
+        memberResults.add(memberRuntimeInfo);
       }
-    } else {
-      results.add(new RuntimeGatewayReceiverConfig(gatewayReceiver));
     }
+    runtimeGatewayReceiverConfig.setMembers(memberResults);
 
-    return results;
+    return Collections.singletonList(runtimeGatewayReceiverConfig);
   }
 
   @VisibleForTesting
@@ -111,6 +108,9 @@ public class GatewayReceiverConfigManager implements ConfigurationManager<Gatewa
 
   @VisibleForTesting
   Set<DistributedMember> getMembers(final String group) {
+    if ("cluster".equals(group)) {
+      return CliUtil.findMembers(null, new String[] {}, cache);
+    }
     return CliUtil.findMembers(new String[] {group}, new String[] {}, cache);
   }
 

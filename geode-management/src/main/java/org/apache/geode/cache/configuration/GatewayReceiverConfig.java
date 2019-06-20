@@ -82,7 +82,6 @@ public class GatewayReceiverConfig extends CacheElement implements RestfulEndpoi
 
   public GatewayReceiverConfig(GatewayReceiverConfig config) {
     super(config);
-//    setGroup(config.getGroup());
     gatewayTransportFilters = config.getGatewayTransportFilters();
     startPort = config.getStartPort();
     endPort = config.getEndPort();
