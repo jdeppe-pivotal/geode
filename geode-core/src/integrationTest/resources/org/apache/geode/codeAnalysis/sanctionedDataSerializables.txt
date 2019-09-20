@@ -496,11 +496,11 @@ toData,16
 
 org/apache/geode/internal/admin/remote/ClientHealthStats,6
 fromData,73
-fromDataPre_GFE_8_0_0_0,68
 fromDataPre_GEODE_1_9_0_0,14
+fromDataPre_GFE_8_0_0_0,68
 toData,73
-toDataPre_GFE_8_0_0_0,68
 toDataPre_GEODE_1_9_0_0,14
+toDataPre_GFE_8_0_0_0,68
 
 org/apache/geode/internal/admin/remote/CompactRequest,2
 fromData,6
@@ -1981,8 +1981,8 @@ fromData,212
 toData,239
 
 org/apache/geode/internal/cache/versions/VersionTag,2
-fromData,189
-toData,259
+fromData,221
+toData,254
 
 org/apache/geode/internal/cache/wan/GatewaySenderAdvisor$GatewaySenderProfile,4
 fromData,282

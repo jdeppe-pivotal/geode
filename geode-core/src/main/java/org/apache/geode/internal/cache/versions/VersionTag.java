@@ -17,6 +17,8 @@ package org.apache.geode.internal.cache.versions;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.BufferUnderflowException;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import org.apache.logging.log4j.Logger;
@@ -24,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.geode.distributed.internal.DistributionManager;
 import org.apache.geode.internal.DataSerializableFixedID;
 import org.apache.geode.internal.InternalDataSerializer;
+import org.apache.geode.internal.Version;
 import org.apache.geode.internal.cache.persistence.DiskStoreID;
 import org.apache.geode.internal.logging.LogService;
 import org.apache.geode.internal.logging.log4j.LogMarker;
@@ -58,11 +61,11 @@ public abstract class VersionTag<T extends VersionSource>
 
 
   // flags for serialization
-  private static final int HAS_MEMBER_ID = 0x01;
-  private static final int HAS_PREVIOUS_MEMBER_ID = 0x02;
-  private static final int VERSION_TWO_BYTES = 0x04;
-  private static final int DUPLICATE_MEMBER_IDS = 0x08;
-  private static final int HAS_RVV_HIGH_BYTE = 0x10;
+  static final int HAS_MEMBER_ID = 0x01;
+  static final int HAS_PREVIOUS_MEMBER_ID = 0x02;
+  static final int VERSION_TWO_BYTES = 0x04;
+  static final int DUPLICATE_MEMBER_IDS = 0x08;
+  static final int HAS_RVV_HIGH_BYTE = 0x10;
 
   private static final int BITS_POSDUP = 0x01;
   private static final int BITS_RECORDED = 0x02; // has the rvv recorded this?
@@ -347,10 +350,13 @@ public abstract class VersionTag<T extends VersionSource>
     if (this.memberID != null && includeMember) {
       flags |= HAS_MEMBER_ID;
     }
-    if (this.previousMemberID != null) {
+    boolean writePreviousMemberID = false;
+    if (this.previousMemberID != null && includeMember) {
       flags |= HAS_PREVIOUS_MEMBER_ID;
-      if (this.previousMemberID == this.memberID && includeMember) {
+      if (Objects.equals(this.previousMemberID, this.memberID)) {
         flags |= DUPLICATE_MEMBER_IDS;
+      } else {
+        writePreviousMemberID = true;
       }
     }
     if (logger.isTraceEnabled(LogMarker.VERSION_TAG_VERBOSE)) {
@@ -373,8 +379,7 @@ public abstract class VersionTag<T extends VersionSource>
     if (this.memberID != null && includeMember) {
       writeMember(this.memberID, out);
     }
-    if (this.previousMemberID != null
-        && (this.previousMemberID != this.memberID || !includeMember)) {
+    if (writePreviousMemberID) {
       writeMember(this.previousMemberID, out);
     }
   }
@@ -405,7 +410,17 @@ public abstract class VersionTag<T extends VersionSource>
       if ((flags & DUPLICATE_MEMBER_IDS) != 0) {
         this.previousMemberID = this.memberID;
       } else {
-        this.previousMemberID = readMember(in);
+        try {
+          this.previousMemberID = readMember(in);
+        } catch (BufferUnderflowException e) {
+          if (InternalDataSerializer.getVersionForDataStream(in)
+              .compareTo(Version.GEODE_1_10_0) < 0) {
+            // GEODE-7219: older versions may report HAS_PREVIOUS_MEMBER_ID but not transmit it
+            logger.info("Buffer underflow encountered while reading a version tag - ignoring");
+          } else {
+            throw e;
+          }
+        }
       }
     }
     setBits(BITS_IS_REMOTE_TAG);
