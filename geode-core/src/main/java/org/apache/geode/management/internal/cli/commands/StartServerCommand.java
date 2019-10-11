@@ -41,6 +41,7 @@ import org.apache.geode.management.cli.CliMetaData;
 import org.apache.geode.management.cli.ConverterHint;
 import org.apache.geode.management.internal.cli.CliUtil;
 import org.apache.geode.management.internal.cli.GfshParser;
+import org.apache.geode.management.internal.cli.commands.springboot.SpringBootArchiveServerLauncher;
 import org.apache.geode.management.internal.cli.i18n.CliStrings;
 import org.apache.geode.management.internal.cli.result.model.ResultModel;
 import org.apache.geode.management.internal.cli.shell.Gfsh;
@@ -436,7 +437,10 @@ public class StartServerCommand extends OfflineGfshCommand {
     commandLine.add(StartMemberUtils.getJavaPath());
     commandLine.add("-server");
     commandLine.add("-classpath");
-    commandLine.add(getServerClasspath(Boolean.TRUE.equals(includeSystemClasspath), userClasspath));
+    commandLine.add(
+        "/Users/jdeppe/workspace/gemfire-develop/open/geode-gfsh/build/libs/geode-gfsh-1.11.0-SNAPSHOT.jar");
+    // commandLine.add(getServerClasspath(Boolean.TRUE.equals(includeSystemClasspath),
+    // userClasspath));
 
     StartMemberUtils.addCurrentLocators(this, commandLine, gemfireProperties);
     StartMemberUtils.addGemFirePropertyFile(commandLine, gemfirePropertiesFile);
@@ -463,7 +467,7 @@ public class StartServerCommand extends OfflineGfshCommand {
       commandLine
           .add("-D".concat(OSProcess.DISABLE_REDIRECTION_CONFIGURATION_PROPERTY).concat("=true"));
     }
-    commandLine.add(ServerLauncher.class.getName());
+    commandLine.add(SpringBootArchiveServerLauncher.class.getName());
     commandLine.add(ServerLauncher.Command.START.getName());
 
     if (StringUtils.isNotBlank(launcher.getMemberName())) {

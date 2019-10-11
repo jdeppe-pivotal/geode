@@ -15,7 +15,7 @@
 package org.apache.geode.internal.cache;
 
 import java.io.File;
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -167,7 +167,7 @@ public class InternalHttpService implements HttpService {
   }
 
   @Override
-  public synchronized void addWebApplication(String webAppContext, Path warFilePath,
+  public synchronized void addWebApplication(String webAppContext, URI warFilePath,
       Map<String, Object> attributeNameValuePairs)
       throws Exception {
     if (httpServer == null) {

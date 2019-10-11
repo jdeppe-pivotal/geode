@@ -43,6 +43,7 @@ import org.apache.geode.internal.util.IOUtils;
 import org.apache.geode.management.cli.CliMetaData;
 import org.apache.geode.management.cli.ConverterHint;
 import org.apache.geode.management.internal.cli.GfshParser;
+import org.apache.geode.management.internal.cli.commands.springboot.SpringBootArchiveLocatorLauncher;
 import org.apache.geode.management.internal.cli.domain.ConnectToLocatorResult;
 import org.apache.geode.management.internal.cli.i18n.CliStrings;
 import org.apache.geode.management.internal.cli.result.model.InfoResultModel;
@@ -457,9 +458,12 @@ public class StartLocatorCommand extends OfflineGfshCommand {
 
     commandLine.add(StartMemberUtils.getJavaPath());
     commandLine.add("-server");
+    // commandLine.add("-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5006");
     commandLine.add("-classpath");
-    commandLine
-        .add(getLocatorClasspath(Boolean.TRUE.equals(includeSystemClasspath), userClasspath));
+    commandLine.add(
+        "/Users/jdeppe/workspace/gemfire-develop/open/geode-gfsh/build/libs/geode-gfsh-1.11.0-SNAPSHOT.jar");
+    // commandLine
+    // .add(getLocatorClasspath(Boolean.TRUE.equals(includeSystemClasspath), userClasspath));
 
     StartMemberUtils.addCurrentLocators(this, commandLine, gemfireProperties);
     StartMemberUtils.addGemFirePropertyFile(commandLine, gemfirePropertiesFile);
@@ -478,7 +482,7 @@ public class StartLocatorCommand extends OfflineGfshCommand {
       commandLine
           .add("-D".concat(OSProcess.DISABLE_REDIRECTION_CONFIGURATION_PROPERTY).concat("=true"));
     }
-    commandLine.add(LocatorLauncher.class.getName());
+    commandLine.add(SpringBootArchiveLocatorLauncher.class.getName());
     commandLine.add(LocatorLauncher.Command.START.getName());
 
     if (StringUtils.isNotBlank(launcher.getMemberName())) {

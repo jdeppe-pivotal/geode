@@ -14,7 +14,7 @@
  */
 package org.apache.geode.cache.internal;
 
-import java.nio.file.Path;
+import java.net.URI;
 import java.util.Map;
 
 import org.apache.geode.internal.cache.CacheService;
@@ -43,6 +43,6 @@ public interface HttpService extends CacheService {
    * @param warFilePath the absolute path to the war file
    * @param attributeNameValuePairs attributes to be set on the servlet context
    */
-  void addWebApplication(String webAppContext, Path warFilePath,
+  void addWebApplication(String webAppContext, URI warFilePath,
       Map<String, Object> attributeNameValuePairs) throws Exception;
 }

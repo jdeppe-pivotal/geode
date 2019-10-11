@@ -168,6 +168,7 @@ dependencies {
   // External
   //------------------------------------------------------------
 
+  compileOnly('org.springframework.boot:spring-boot-loader:2.1.8.RELEASE')
 
   //tools.jar seems to be used by gfsh is some cases to control processes using
   //the sun attach API? But this code path may not even be used?

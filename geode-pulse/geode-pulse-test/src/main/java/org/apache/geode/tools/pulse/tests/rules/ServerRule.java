@@ -81,7 +81,7 @@ public class ServerRule extends ExternalResource {
     int httpPort = AvailablePort.getRandomAvailablePort(AvailablePort.SOCKET);
     jetty = new InternalHttpService();
     jetty.createJettyServer(LOCALHOST, httpPort, new SSLConfig());
-    jetty.addWebApplication(PULSE_CONTEXT, getPulseWarPath(), new HashMap<>());
+    jetty.addWebApplication(PULSE_CONTEXT, getPulseWarPath().toUri(), new HashMap<>());
     pulseURL = "http://" + LOCALHOST + ":" + httpPort + PULSE_CONTEXT;
   }
 

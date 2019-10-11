@@ -87,10 +87,20 @@ public class AgentUtil {
 
   private URI findPossibleWarLocationFromExtraLocations(String versionedWarFileName,
       String unversionedWarFileName) {
+
+    String webappName;
+    if (unversionedWarFileName.endsWith(".war")) {
+      webappName = unversionedWarFileName.substring(0, unversionedWarFileName.length() - 4);
+    } else {
+      webappName = "unknown";
+    }
+
     final URL url = Arrays.stream(new String[] {versionedWarFileName,
         "tools/Pulse/" + versionedWarFileName,
         "tools/Extensions/" + versionedWarFileName,
         "lib/" + versionedWarFileName,
+        "BOOT-INF/lib/" + versionedWarFileName,
+        "webapps/" + webappName,
         unversionedWarFileName})
         .map(possibleFile -> this.getClass().getClassLoader().getResource(possibleFile))
         .filter(Objects::nonNull).findFirst().orElse(null);
