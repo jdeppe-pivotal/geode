@@ -21,9 +21,10 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 import org.apache.geode.management.api.ClusterManagementService;
+import org.apache.geode.management.api.RestTemplateClusterManagementServiceTransport;
 import org.apache.geode.management.client.ClusterManagementServiceBuilder;
 
-public class SpringClusterManagemnetServiceBuilder implements
+public class SpringClusterManagementServiceBuilder implements
     ClusterManagementServiceBuilder.HttpRequestFactoryBuilder {
 
   protected ClientHttpRequestFactory requestFactory;
@@ -32,10 +33,11 @@ public class SpringClusterManagemnetServiceBuilder implements
     RestTemplate restTemplate = new RestTemplate();
     restTemplate.setErrorHandler(DEFAULT_ERROR_HANDLER);
     restTemplate.setRequestFactory(requestFactory);
-    return new ClientClusterManagementService(restTemplate);
+    return new ClientClusterManagementService(
+        new RestTemplateClusterManagementServiceTransport(restTemplate));
   }
 
-  public SpringClusterManagemnetServiceBuilder setRequestFactory(
+  public SpringClusterManagementServiceBuilder setRequestFactory(
       ClientHttpRequestFactory httpRequestFactory) {
     this.requestFactory = httpRequestFactory;
     return this;

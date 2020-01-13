@@ -36,6 +36,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.DefaultUriTemplateHandler;
 
 import org.apache.geode.management.api.ClusterManagementService;
+import org.apache.geode.management.api.RestTemplateClusterManagementServiceTransport;
 import org.apache.geode.management.client.ClusterManagementServiceBuilder;
 import org.apache.geode.util.internal.GeodeJsonMapper;
 
@@ -88,8 +89,12 @@ public class PlainClusterManagementServiceBuilder implements
     return username;
   }
 
+  protected RestTemplate getRestTemplate() {
+    return new RestTemplate();
+  }
+
   public ClusterManagementService build() {
-    RestTemplate restTemplate = new RestTemplate();
+    RestTemplate restTemplate = getRestTemplate();
     restTemplate.setErrorHandler(DEFAULT_ERROR_HANDLER);
 
     if (host == null || port <= 0) {
@@ -137,6 +142,7 @@ public class PlainClusterManagementServiceBuilder implements
         m -> m.getClass().getName().equals(MappingJackson2HttpMessageConverter.class.getName()));
     restTemplate.getMessageConverters().add(messageConverter);
 
-    return new ClientClusterManagementService(restTemplate);
+    return new ClientClusterManagementService(
+        new RestTemplateClusterManagementServiceTransport(restTemplate));
   }
 }

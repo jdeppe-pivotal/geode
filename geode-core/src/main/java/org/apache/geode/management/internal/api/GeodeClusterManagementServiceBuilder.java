@@ -69,6 +69,7 @@ public class GeodeClusterManagementServiceBuilder implements
   private PlainClusterManagementServiceBuilder javaBuilder =
       new PlainClusterManagementServiceBuilder();
 
+  @Override
   public GeodeClusterManagementServiceBuilder setCredentials(String username,
       String password) {
     javaBuilder.setCredentials(username, password);
@@ -81,6 +82,7 @@ public class GeodeClusterManagementServiceBuilder implements
     return this;
   }
 
+  @Override
   public GeodeClusterManagementServiceBuilder setCache(GemFireCache cache) {
     GemFireCacheImpl cacheImpl = (GemFireCacheImpl) cache;
     if (cacheImpl.isServer()) {

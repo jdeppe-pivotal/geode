@@ -23,7 +23,8 @@ import org.springframework.http.client.ClientHttpRequestFactory;
 import org.apache.geode.annotations.Experimental;
 import org.apache.geode.management.api.ClusterManagementService;
 import org.apache.geode.management.internal.PlainClusterManagementServiceBuilder;
-import org.apache.geode.management.internal.SpringClusterManagemnetServiceBuilder;
+import org.apache.geode.management.internal.RestTemplateClusterManagementServiceBuilder;
+import org.apache.geode.management.internal.SpringClusterManagementServiceBuilder;
 
 /**
  * this builder allows you to build a ClusterManagementService using host address or
@@ -37,7 +38,11 @@ public class ClusterManagementServiceBuilder {
   }
 
   public static HttpRequestFactoryBuilder buildWithRequestFactory() {
-    return new SpringClusterManagemnetServiceBuilder();
+    return new SpringClusterManagementServiceBuilder();
+  }
+
+  public static RestTemplateClusterManagementServiceBuilder buildWithRestTemplate() {
+    return new RestTemplateClusterManagementServiceBuilder();
   }
 
   public interface Builder {
