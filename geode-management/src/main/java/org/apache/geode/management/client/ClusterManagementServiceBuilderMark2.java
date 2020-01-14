@@ -26,17 +26,32 @@ public class ClusterManagementServiceBuilderMark2 {
 
   private ClusterManagementServiceTransportBuilder transportBuilder;
 
-  public ClusterManagementService build(ClusterManagementServiceConnectionConfig connectionConfig) {
+  private ClusterManagementServiceConnectionConfig connectionConfig;
+
+  public ClusterManagementService build() {
+    if (transportBuilder == null && connectionConfig == null) {
+      throw new IllegalStateException("Both transportBuilder and connectionConfig are null. Please configure with at least one of setTransportBuilder() or setConnectionConfig()");
+    }
+
     if (transportBuilder == null) {
       transportBuilder = new RestTemplateClusterManagementServiceTransportBuilder();
     }
 
-    return new ClientClusterManagementService(transportBuilder.build(connectionConfig));
+    if (connectionConfig == null) {
+      return new ClientClusterManagementService(transportBuilder.build());
+    }
+
+    return new ClientClusterManagementService(transportBuilder.setConnectionConfig(connectionConfig).build());
   }
 
-  ClusterManagementServiceBuilderMark2 setTransport(
+  public ClusterManagementServiceBuilderMark2 setTransport(
       ClusterManagementServiceTransportBuilder transportBuilder) {
     this.transportBuilder = transportBuilder;
+    return this;
+  }
+
+  public ClusterManagementServiceBuilderMark2 setConnectionConfig(ClusterManagementServiceConnectionConfig connectionConfig) {
+    this.connectionConfig = connectionConfig;
     return this;
   }
 }

@@ -27,6 +27,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.concurrent.CompletableFuture;
 
+import org.apache.geode.management.api.ClusterManagementServiceTransportBuilder;
+import org.apache.geode.management.api.RequestFactoryClusterManagementServiceTransportBuilder;
+import org.apache.geode.management.api.RestTemplateClusterManagementServiceTransportBuilder;
+import org.apache.geode.management.client.ClusterManagementServiceBuilderMark2;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,6 +41,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.context.web.WebAppConfiguration;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.context.WebApplicationContext;
 
 import org.apache.geode.management.api.ClusterManagementListOperationsResult;
@@ -64,8 +69,10 @@ public class RebalanceIntegrationTest {
   @Before
   public void before() {
     context = new LocatorWebContext(webApplicationContext);
-    client = ClusterManagementServiceBuilder.buildWithRequestFactory()
-        .setRequestFactory(context.getRequestFactory()).build();
+
+    ClusterManagementServiceTransportBuilder transportBuilder =
+            new RequestFactoryClusterManagementServiceTransportBuilder().setRequestFactory(context.getRequestFactory());
+    client = new ClusterManagementServiceBuilderMark2().setTransport(transportBuilder).build();
   }
 
   @Test

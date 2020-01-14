@@ -17,6 +17,9 @@ package org.apache.geode.rest.internal.web;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import org.apache.geode.management.api.BasicClusterManagementServiceConnectionConfig;
+import org.apache.geode.management.api.ClusterManagementServiceConnectionConfig;
+import org.apache.geode.management.client.ClusterManagementServiceBuilderMark2;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -38,19 +41,18 @@ public class ManagementRestAuthTokenIntegrationTest {
 
   @Test
   public void validToken() throws Exception {
-    ClusterManagementService cms = ClusterManagementServiceBuilder.buildWithHostAddress()
-        .setAuthToken(SimpleSecurityManager.VALID_TOKEN)
-        .setHostAddress("localhost", locator.getHttpPort())
-        .build();
+
+    ClusterManagementServiceConnectionConfig connectionConfig = new BasicClusterManagementServiceConnectionConfig(
+            "localhost", locator.getHttpPort()).setAuthToken(SimpleSecurityManager.VALID_TOKEN);
+    ClusterManagementService cms = new ClusterManagementServiceBuilderMark2().build(connectionConfig);
     assertThat(cms.isConnected()).isTrue();
   }
 
   @Test
   public void invalidToken() throws Exception {
-    ClusterManagementService cms = ClusterManagementServiceBuilder.buildWithHostAddress()
-        .setAuthToken("invalidToken")
-        .setHostAddress("localhost", locator.getHttpPort())
-        .build();
+    ClusterManagementServiceConnectionConfig connectionConfig = new BasicClusterManagementServiceConnectionConfig(
+            "localhost", locator.getHttpPort()).setAuthToken("invalidToken");
+    ClusterManagementService cms = new ClusterManagementServiceBuilderMark2().build(connectionConfig);
     assertThat(cms.isConnected()).isFalse();
   }
 }

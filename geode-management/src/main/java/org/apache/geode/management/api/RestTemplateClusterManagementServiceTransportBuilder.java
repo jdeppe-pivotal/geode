@@ -39,10 +39,11 @@ import org.apache.geode.util.internal.GeodeJsonMapper;
 public class RestTemplateClusterManagementServiceTransportBuilder
     implements ClusterManagementServiceTransportBuilder {
 
-  private static final ResponseErrorHandler DEFAULT_ERROR_HANDLER =
+  static final ResponseErrorHandler DEFAULT_ERROR_HANDLER =
       new RestTemplateResponseErrorHandler();
 
   private RestTemplate restTemplate = null;
+  private ClusterManagementServiceConnectionConfig connectionConfig;
 
   public ClusterManagementServiceTransportBuilder setRestTemplate(RestTemplate template) {
     this.restTemplate = template;
@@ -50,22 +51,32 @@ public class RestTemplateClusterManagementServiceTransportBuilder
   }
 
   @Override
-  public ClusterManagementServiceTransport build(ClusterManagementServiceConnectionConfig config) {
+  public ClusterManagementServiceTransportBuilder setConnectionConfig(ClusterManagementServiceConnectionConfig connectionConfig) {
+    this.connectionConfig = connectionConfig;
+    return this;
+  }
+
+  @Override
+  public ClusterManagementServiceTransport build() {
+    if (connectionConfig == null) {
+      throw new IllegalStateException("ConnectionConfig cannot be null. Please use setConnectionConfig()");
+    }
+
     if (restTemplate == null) {
       restTemplate = new RestTemplate();
     }
 
     restTemplate.setErrorHandler(DEFAULT_ERROR_HANDLER);
 
-    if (config.getHost() == null || config.getPort() <= 0) {
+    if (connectionConfig.getHost() == null || connectionConfig.getPort() <= 0) {
       throw new IllegalArgumentException(
           "host and port needs to be specified in order to build the service.");
     }
 
     DefaultUriTemplateHandler templateHandler = new DefaultUriTemplateHandler();
-    String schema = (config.getSslContext() == null) ? "http" : "https";
+    String schema = (connectionConfig.getSslContext() == null) ? "http" : "https";
     templateHandler
-        .setBaseUrl(schema + "://" + config.getHost() + ":" + config.getPort() + "/management");
+        .setBaseUrl(schema + "://" + connectionConfig.getHost() + ":" + connectionConfig.getPort() + "/management");
     restTemplate.setUriTemplateHandler(templateHandler);
 
     // HttpComponentsClientHttpRequestFactory allows use to preconfigure httpClient for
@@ -75,19 +86,19 @@ public class RestTemplateClusterManagementServiceTransportBuilder
 
     HttpClientBuilder clientBuilder = HttpClientBuilder.create();
     // configures the clientBuilder
-    if (config.getAuthToken() != null) {
+    if (connectionConfig.getAuthToken() != null) {
       List<Header> defaultHeaders = Arrays.asList(
-          new BasicHeader(HttpHeaders.AUTHORIZATION, "Bearer " + config.getAuthToken()));
+          new BasicHeader(HttpHeaders.AUTHORIZATION, "Bearer " + connectionConfig.getAuthToken()));
       clientBuilder.setDefaultHeaders(defaultHeaders);
-    } else if (config.getUsername() != null) {
+    } else if (connectionConfig.getUsername() != null) {
       CredentialsProvider credsProvider = new BasicCredentialsProvider();
-      credsProvider.setCredentials(new AuthScope(config.getHost(), config.getPort()),
-          new UsernamePasswordCredentials(config.getUsername(), config.getPassword()));
+      credsProvider.setCredentials(new AuthScope(connectionConfig.getHost(), connectionConfig.getPort()),
+          new UsernamePasswordCredentials(connectionConfig.getUsername(), connectionConfig.getPassword()));
       clientBuilder.setDefaultCredentialsProvider(credsProvider);
     }
 
-    clientBuilder.setSSLContext(config.getSslContext());
-    clientBuilder.setSSLHostnameVerifier(config.getHostnameVerifier());
+    clientBuilder.setSSLContext(connectionConfig.getSslContext());
+    clientBuilder.setSSLHostnameVerifier(connectionConfig.getHostnameVerifier());
 
     requestFactory.setHttpClient(clientBuilder.build());
     restTemplate.setRequestFactory(requestFactory);

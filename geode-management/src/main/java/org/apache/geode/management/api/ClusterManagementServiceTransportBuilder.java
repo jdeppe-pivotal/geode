@@ -17,5 +17,8 @@
 package org.apache.geode.management.api;
 
 public interface ClusterManagementServiceTransportBuilder {
-  ClusterManagementServiceTransport build(ClusterManagementServiceConnectionConfig config);
+
+  ClusterManagementServiceTransportBuilder setConnectionConfig(ClusterManagementServiceConnectionConfig connectionConfig);
+
+  ClusterManagementServiceTransport build();
 }
