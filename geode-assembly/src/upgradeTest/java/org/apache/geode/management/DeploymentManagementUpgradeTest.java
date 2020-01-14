@@ -20,6 +20,9 @@ import static org.apache.geode.test.junit.assertions.ClusterManagementListResult
 import java.io.File;
 import java.io.IOException;
 
+import org.apache.geode.management.api.BasicClusterManagementServiceConnectionConfig;
+import org.apache.geode.management.api.ClusterManagementServiceConnectionConfig;
+import org.apache.geode.management.client.ClusterManagementServiceBuilderMark2;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -66,9 +69,10 @@ public class DeploymentManagementUpgradeTest {
     gfsh.execute("start locator --name=test --port=" + ports[0] + " --http-service-port=" + ports[1]
         + " --dir=" + workingDir.getAbsolutePath() + " --J=-Dgemfire.jmx-manager-port=" + ports[2]);
 
-    ClusterManagementService cms =
-        ClusterManagementServiceBuilder.buildWithHostAddress().setHostAddress("localhost", ports[1])
-            .build();
+    ClusterManagementServiceConnectionConfig connectionConfig = new BasicClusterManagementServiceConnectionConfig("localhost", ports[1]);
+    ClusterManagementService cms = new ClusterManagementServiceBuilderMark2().build(connectionConfig);
+//        ClusterManagementServiceBuilder.buildWithHostAddress().setHostAddress("localhost", ports[1])
+//            .build();
     assertManagementListResult(cms.list(new Deployment())).isSuccessful()
         .hasConfigurations().hasSize(1);
   }

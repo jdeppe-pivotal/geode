@@ -28,6 +28,9 @@ import com.arakelian.jq.JqLibrary;
 import com.arakelian.jq.JqRequest;
 import com.arakelian.jq.JqResponse;
 import com.fasterxml.jackson.databind.JsonNode;
+import org.apache.geode.management.api.BasicClusterManagementServiceConnectionConfig;
+import org.apache.geode.management.api.ClusterManagementServiceConnectionConfig;
+import org.apache.geode.management.client.ClusterManagementServiceBuilderMark2;
 import org.assertj.core.api.Assertions;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -66,8 +69,8 @@ public class JQFilterVerificationDUnitTest {
   public static void beforeClass() throws IOException {
     MemberVM locator = cluster.startLocatorVM(0, MemberStarterRule::withHttpService);
     cluster.startServerVM(1, locator.getPort());
-    ClusterManagementService cms = ClusterManagementServiceBuilder.buildWithHostAddress()
-        .setHostAddress("localhost", locator.getHttpPort()).build();
+    ClusterManagementServiceConnectionConfig connectionConfig = new BasicClusterManagementServiceConnectionConfig("localhost", locator.getHttpPort());
+    ClusterManagementService cms = new ClusterManagementServiceBuilderMark2().build(connectionConfig);
     Region region = new Region();
     region.setName("regionA");
     region.setType(RegionType.REPLICATE);
