@@ -54,7 +54,7 @@ public class ClientClusterManagementService implements ClusterManagementService 
   // runner's injected RequestFactory can work
   private final ClusterManagementServiceTransport transport;
 
-  ClientClusterManagementService(ClusterManagementServiceTransport transport) {
+  public ClientClusterManagementService(ClusterManagementServiceTransport transport) {
     this.transport = transport;
   }
 
