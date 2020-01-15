@@ -70,7 +70,7 @@ public class JQFilterVerificationDUnitTest {
     MemberVM locator = cluster.startLocatorVM(0, MemberStarterRule::withHttpService);
     cluster.startServerVM(1, locator.getPort());
     ClusterManagementServiceConnectionConfig connectionConfig = new BasicClusterManagementServiceConnectionConfig("localhost", locator.getHttpPort());
-    ClusterManagementService cms = new ClusterManagementServiceBuilderMark2().build(connectionConfig);
+    ClusterManagementService cms = new ClusterManagementServiceBuilderMark2().setConnectionConfig(connectionConfig).build();
     Region region = new Region();
     region.setName("regionA");
     region.setType(RegionType.REPLICATE);
