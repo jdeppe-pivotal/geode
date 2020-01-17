@@ -21,17 +21,21 @@ apply from: "${project.projectDir}/../gradle/publish-java.gradle"
 
 dependencies {
   compile(platform(project(':boms:geode-all-bom')))
-  implementation(project(':geode-serialization'))
-  implementation(project(':geode-logging'))
   compile(project(':geode-core'))
+  compile(project(':geode-gfsh'))
   compile('com.github.davidmoten:geo')
   compile('io.netty:netty-all')
   compile('org.apache.logging.log4j:log4j-api')
-  compile(project(':geode-gfsh'))
-  distributedTestCompile(project(':geode-dunit'))
-  integrationTestCompile('redis.clients:jedis')
-  distributedTestCompile('redis.clients:jedis')
+
+  implementation(project(':geode-serialization'))
+  implementation(project(':geode-logging'))
+
   testCompile('org.mockito:mockito-core')
   testCompile(project(':geode-junit'))
+
+  integrationTestCompile('redis.clients:jedis')
   integrationTestCompile(project(':geode-junit'))
+
+  distributedTestCompile(project(':geode-dunit'))
+  distributedTestCompile('redis.clients:jedis')
 }

@@ -11,37 +11,23 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
-package org.apache.geode.redis.internal.executor.hash;
+package org.apache.geode.redis.internal;
 
-import org.apache.geode.redis.internal.RedisConstants.ArityDef;
 
 /**
- * <pre>
- * Implements the HSETNX Redis command.
- * This command sets field in the hash stored at key with the given value
- *
- * A new key holding a hash is created if key does not exist, .
- * Nothing will be changed if field already exists.
- *
- * Examples:
- *
- * redis> HSETNX myhash field "Hello"
- * (integer) 1
- * redis> HSETNX myhash field "World"
- * (integer) 0
- * redis> HGET myhash field
- * </pre>
+ * Created by gosullivan on 3/10/17.
  */
-public class HSetNXExecutor extends HSetExecutor {
+public class AutoCloseableLock implements AutoCloseable {
+  Runnable unlock;
 
-  @Override
-  protected boolean onlySetOnAbsent() {
-    return true;
+  public AutoCloseableLock(Runnable unlockFunction) {
+    unlock = unlockFunction;
   }
 
   @Override
-  public String getArgsError() {
-    return ArityDef.HSETNX;
+  public void close() {
+    this.unlock.run();
   }
 }

@@ -19,10 +19,13 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.geode.cache.Region;
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
+import org.apache.geode.redis.internal.CoderException;
 import org.apache.geode.redis.internal.Command;
 import org.apache.geode.redis.internal.ExecutionHandlerContext;
+import org.apache.geode.redis.internal.RedisConstants;
 import org.apache.geode.redis.internal.RedisConstants.ArityDef;
 import org.apache.geode.redis.internal.RedisDataType;
 
@@ -39,16 +42,27 @@ public class SMembersExecutor extends SetExecutor {
 
     ByteArrayWrapper key = command.getKey();
     checkDataType(key, RedisDataType.REDIS_SET, context);
-    @SuppressWarnings("unchecked")
-    Region<ByteArrayWrapper, Boolean> keyRegion =
-        (Region<ByteArrayWrapper, Boolean>) context.getRegionProvider().getRegion(key);
 
-    if (keyRegion == null) {
-      command.setResponse(Coder.getEmptyArrayResponse(context.getByteBufAllocator()));
-      return;
+    Set<ByteArrayWrapper> members;
+    try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
+      Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = getRegion(context);
+
+      // companies:ea64fe8c-e0a0-4439-a05d-d0738dd5ef80:idx
+      Set<ByteArrayWrapper> set = region.get(key);
+
+      if (set == null) {
+        command.setResponse(Coder.getEmptyArrayResponse(context.getByteBufAllocator()));
+        return;
+      }
+
+      members = new HashSet<>(set); // Emulate copy on read
     }
 
-    Set<ByteArrayWrapper> members = new HashSet(keyRegion.keySet()); // Emulate copy on read
-    respondBulkStrings(command, context, members);
+    try {
+      command.setResponse(Coder.getBulkStringArrayResponse(context.getByteBufAllocator(), members));
+    } catch (CoderException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+          RedisConstants.SERVER_ERROR_MESSAGE));
+    }
   }
 }

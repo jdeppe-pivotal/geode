@@ -11,36 +11,42 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
+ *
  */
 package org.apache.geode.redis.internal.executor;
 
-import java.util.Collection;
+import io.netty.buffer.UnpooledByteBufAllocator;
+import org.junit.Test;
+import org.mockito.Mockito;
 
-import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
 import org.apache.geode.redis.internal.ExecutionHandlerContext;
-import org.apache.geode.redis.internal.RedisConstants;
 
-public class UnkownExecutor extends AbstractExecutor {
+/**
+ * Test for the UnkownExecutor
+ *
+ *
+ */
+public class UnkownExecutorTest {
+  /**
+   * Test the execution method
+   */
+  @Test
+  public void testExecuteCommand() {
+    UnkownExecutor exe = new UnkownExecutor();
 
-  @Override
-  public void executeCommand(Command command, ExecutionHandlerContext context) {
+    Command command = Mockito.mock(Command.class);
+    ExecutionHandlerContext context = Mockito.mock(ExecutionHandlerContext.class);
 
-    StringBuilder commandProcessedText = new StringBuilder();
 
-    Collection<byte[]> processedCmds = command.getProcessedCommand();
+    UnpooledByteBufAllocator byteBuf = new UnpooledByteBufAllocator(false);
+    Mockito.when(context.getByteBufAllocator()).thenReturn(byteBuf);
 
-    if (processedCmds != null && !processedCmds.isEmpty()) {
+    exe.executeCommand(command, context);
 
-      for (byte[] bytes : processedCmds) {
-        if (bytes == null || bytes.length == 0)
-          continue; // skip blanks
+    // verify the response was set
+    Mockito.verify(command).setResponse(Mockito.any());
 
-        commandProcessedText.append(Coder.bytesToString(bytes)).append(" ");
-      }
-    }
-
-    command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
-        RedisConstants.ERROR_UNKOWN_COMMAND + " " + commandProcessedText));
   }
+
 }
