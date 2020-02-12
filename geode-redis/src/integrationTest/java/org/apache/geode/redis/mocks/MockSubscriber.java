@@ -22,6 +22,7 @@ import java.util.concurrent.CountDownLatch;
 
 import redis.clients.jedis.JedisPubSub;
 
+
 public class MockSubscriber extends JedisPubSub {
   private CountDownLatch latch;
   private List<String> receivedMessages = new ArrayList<String>();
@@ -40,7 +41,17 @@ public class MockSubscriber extends JedisPubSub {
   }
 
   @Override
+  public void onPSubscribe(String pattern, int subscribedChannels) {
+    latch.countDown();
+  }
+
+  @Override
   public void onMessage(String channel, String message) {
+    receivedMessages.add(message);
+  }
+
+  @Override
+  public void onPMessage(String pattern, String channel, String message) {
     receivedMessages.add(message);
   }
 }

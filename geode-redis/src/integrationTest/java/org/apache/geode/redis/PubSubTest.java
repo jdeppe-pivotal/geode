@@ -251,4 +251,72 @@ public class PubSubTest {
 
     assertThat(mockSubscriber.getReceivedMessages()).isEmpty();
   }
+
+  @Test
+  public void testPatternSubscribe() throws InterruptedException {
+    Jedis subscriber = new Jedis("localhost", port);
+    Jedis publisher = new Jedis("localhost", port);
+
+    CountDownLatch latch = new CountDownLatch(1);
+    MockSubscriber mockSubscriber = new MockSubscriber(latch);
+
+    Runnable runnable = () -> {
+      subscriber.psubscribe(mockSubscriber, "sal*s");
+    };
+
+    Thread subscriberThread = new Thread(runnable);
+    subscriberThread.start();
+
+    assertThat(latch.await(2, TimeUnit.SECONDS))
+        .as("channel subscriptions were not received")
+        .isTrue();
+
+    Long result = publisher.publish("salutations", "hello");
+    assertThat(result).isEqualTo(1);
+
+    assertThat(mockSubscriber.getReceivedMessages()).hasSize(1);
+    assertThat(mockSubscriber.getReceivedMessages()).contains("hello");
+
+    mockSubscriber.punsubscribe("sal*s");
+    subscriberThread.join(2000);
+
+    assertThat(subscriberThread.isAlive())
+        .as("subscriber thread should not be alive")
+        .isFalse();
+  }
+
+  @Test
+  public void testPatternAndRegularSubscribe() throws InterruptedException {
+    Jedis subscriber = new Jedis("localhost", 6379);
+    Jedis publisher = new Jedis("localhost", 6379);
+
+    CountDownLatch latch = new CountDownLatch(1);
+    MockSubscriber mockSubscriber = new MockSubscriber(latch);
+
+    Runnable runnable = () -> {
+      subscriber.subscribe(mockSubscriber, "salutations");
+    };
+
+    Thread subscriberThread = new Thread(runnable);
+    subscriberThread.start();
+
+    assertThat(latch.await(2, TimeUnit.SECONDS))
+        .as("channel subscriptions were not received")
+        .isTrue();
+
+    mockSubscriber.psubscribe("sal*s");
+
+    Long result = publisher.publish("salutations", "hello");
+    assertThat(result).isEqualTo(2);
+
+    mockSubscriber.punsubscribe("sal*s");
+    mockSubscriber.unsubscribe("salutations");
+    subscriberThread.join(2000);
+
+    assertThat(subscriberThread.isAlive())
+        .as("subscriber thread should not be alive")
+        .isFalse();
+
+    assertThat(mockSubscriber.getReceivedMessages()).isEmpty();
+  }
 }

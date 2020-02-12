@@ -25,6 +25,7 @@ import org.apache.geode.cache.execute.Function;
 import org.apache.geode.cache.execute.FunctionContext;
 import org.apache.geode.cache.execute.FunctionService;
 import org.apache.geode.cache.execute.ResultCollector;
+import org.apache.geode.redis.internal.org.apache.hadoop.fs.GlobPattern;
 
 /**
  * Concrete class that manages publish and subscribe functionality. Since Redis subscriptions
@@ -62,6 +63,16 @@ public class PubSubImpl implements PubSub {
     return subscribers.findSubscribers(client).size();
   }
 
+  @Override
+  public long psubscribe(GlobPattern pattern, ExecutionHandlerContext context, Client client) {
+    if (subscribers.patternExists(pattern, client)) {
+      return subscribers.findSubscribers(client).size();
+    }
+    Subscriber subscriber = new Subscriber(client, pattern, context);
+    subscribers.add(subscriber);
+    return subscribers.findSubscribers(client).size();
+  }
+
   private void registerPublishFunction() {
     FunctionService.registerFunction(new Function<String[]>() {
       @Override
@@ -84,12 +95,19 @@ public class PubSubImpl implements PubSub {
     return this.subscribers.findSubscribers(client).size();
   }
 
+  @Override
+  public long punsubscribe(GlobPattern pattern, Client client) {
+    this.subscribers.remove(pattern, client);
+    return this.subscribers.findSubscribers(client).size();
+  }
+
   private long publishMessageToSubscribers(String channel, String message) {
     Map<Boolean, List<Subscriber>> results = this.subscribers
         .findSubscribers(channel)
         .stream()
         .collect(
-            Collectors.partitioningBy(subscriber -> subscriber.publishMessage(channel, message)));
+            Collectors.partitioningBy(
+                subscriber -> subscriber.publishMessage(channel, message)));
 
     prune(results.get(false));
 
@@ -111,26 +129,53 @@ public class PubSubImpl implements PubSub {
       return subscribers.stream().anyMatch(subscriber -> subscriber.isEqualTo(channel, client));
     }
 
+    private boolean patternExists(GlobPattern pattern, Client client) {
+      return subscribers.stream().anyMatch(subscriber -> subscriber.isEqualTo(pattern, client));
+    }
+
     private List<Subscriber> findSubscribers(Client client) {
       return subscribers.stream().filter(subscriber -> subscriber.client.equals(client))
           .collect(Collectors.toList());
     }
 
     private List<Subscriber> findSubscribers(String channel) {
-      return subscribers.stream().filter(subscriber -> subscriber.channel.equals(channel))
+      List<Subscriber> channelSubscribers = this.subscribers.stream()
+          .filter(subscriber -> {
+            if (subscriber.channel == null) {
+              return false;
+            }
+            return subscriber.channel.equals(channel);
+          })
           .collect(Collectors.toList());
+
+      List<Subscriber> patternSubscribers = this.subscribers.stream()
+          .filter(subscriber -> {
+            if (subscriber.pattern == null) {
+              return false;
+            }
+            return subscriber.pattern.matches(channel);
+          })
+          .collect(Collectors.toList());
+
+      channelSubscribers.addAll(patternSubscribers);
+
+      return channelSubscribers;
     }
 
     public void add(Subscriber subscriber) {
       this.subscribers.add(subscriber);
     }
 
+    public void remove(Client client) {
+      this.subscribers.removeIf(subscriber -> subscriber.client.equals(client));
+    }
+
     public void remove(String channel, Client client) {
       this.subscribers.removeIf(subscriber -> subscriber.isEqualTo(channel, client));
     }
 
-    public void remove(Client client) {
-      this.subscribers.removeIf(subscriber -> subscriber.client.equals(client));
+    public void remove(GlobPattern pattern, Client client) {
+      this.subscribers.removeIf(subscriber -> subscriber.isEqualTo(pattern, client));
     }
   }
 }

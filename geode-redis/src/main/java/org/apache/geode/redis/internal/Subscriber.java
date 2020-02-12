@@ -24,24 +24,51 @@ import io.netty.channel.ChannelFuture;
 import org.apache.logging.log4j.Logger;
 
 import org.apache.geode.logging.internal.log4j.api.LogService;
+import org.apache.geode.redis.internal.org.apache.hadoop.fs.GlobPattern;
 
 class Subscriber {
   private static final Logger logger = LogService.getLogger();
-  public final Client client;
-  public final String channel;
+  final Client client;
+  String channel;
+  GlobPattern pattern;
+
   private ExecutionHandlerContext context;
 
-  public Subscriber(Client client, String channel, ExecutionHandlerContext context) {
+  private Subscriber(Client client, ExecutionHandlerContext context) {
+    if (client == null) {
+      throw new IllegalArgumentException("client cannot be null");
+    }
+    if (context == null) {
+      throw new IllegalArgumentException("context cannot be null");
+    }
     this.client = client;
-    this.channel = channel;
     this.context = context;
   }
 
-  public boolean isEqualTo(String channel, Client client) {
-    if (channel == null || client == null) {
-      return false;
+  public Subscriber(Client client, GlobPattern pattern, ExecutionHandlerContext context) {
+    this(client, context);
+
+    if (pattern == null) {
+      throw new IllegalArgumentException("pattern cannot be null");
     }
-    return channel.equals(this.channel) && client.equals(this.client);
+    this.pattern = pattern;
+  }
+
+  public Subscriber(Client client, String channel, ExecutionHandlerContext context) {
+    this(client, context);
+
+    if (channel == null) {
+      throw new IllegalArgumentException("channel cannot be null");
+    }
+    this.channel = channel;
+  }
+
+  public boolean isEqualTo(String channel, Client client) {
+    return this.channel.equals(channel) && this.client.equals(client);
+  }
+
+  public boolean isEqualTo(GlobPattern pattern, Client client) {
+    return this.pattern.equals(pattern) && this.client.equals(client);
   }
 
   public boolean publishMessage(String channel, String message) {
