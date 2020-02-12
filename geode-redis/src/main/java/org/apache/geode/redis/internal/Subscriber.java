@@ -64,11 +64,11 @@ class Subscriber {
   }
 
   public boolean isEqualTo(String channel, Client client) {
-    return this.channel.equals(channel) && this.client.equals(client);
+    return this.channel != null && this.channel.equals(channel) && this.client.equals(client);
   }
 
   public boolean isEqualTo(GlobPattern pattern, Client client) {
-    return this.pattern.equals(pattern) && this.client.equals(client);
+    return this.pattern != null && this.pattern.equals(pattern) && this.client.equals(client);
   }
 
   public boolean publishMessage(String channel, String message) {

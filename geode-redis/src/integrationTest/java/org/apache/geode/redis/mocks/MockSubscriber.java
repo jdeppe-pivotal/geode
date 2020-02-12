@@ -24,8 +24,12 @@ import redis.clients.jedis.JedisPubSub;
 
 
 public class MockSubscriber extends JedisPubSub {
-  private CountDownLatch latch;
+  private CountDownLatch latch = new CountDownLatch(50);
   private List<String> receivedMessages = new ArrayList<String>();
+
+  public MockSubscriber() {
+
+  }
 
   public MockSubscriber(CountDownLatch latch) {
     this.latch = latch;

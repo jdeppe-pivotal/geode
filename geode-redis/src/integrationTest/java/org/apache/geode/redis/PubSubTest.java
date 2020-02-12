@@ -18,6 +18,7 @@ package org.apache.geode.redis;
 import static org.apache.geode.distributed.ConfigurationProperties.LOCATORS;
 import static org.apache.geode.distributed.ConfigurationProperties.LOG_LEVEL;
 import static org.apache.geode.distributed.ConfigurationProperties.MCAST_PORT;
+import static org.apache.geode.test.awaitility.GeodeAwaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Arrays;
@@ -287,11 +288,10 @@ public class PubSubTest {
 
   @Test
   public void testPatternAndRegularSubscribe() throws InterruptedException {
-    Jedis subscriber = new Jedis("localhost", 6379);
-    Jedis publisher = new Jedis("localhost", 6379);
+    Jedis subscriber = new Jedis("localhost", port);
+    Jedis publisher = new Jedis("localhost", port);
 
-    CountDownLatch latch = new CountDownLatch(1);
-    MockSubscriber mockSubscriber = new MockSubscriber(latch);
+    MockSubscriber mockSubscriber = new MockSubscriber();
 
     Runnable runnable = () -> {
       subscriber.subscribe(mockSubscriber, "salutations");
@@ -300,23 +300,23 @@ public class PubSubTest {
     Thread subscriberThread = new Thread(runnable);
     subscriberThread.start();
 
-    assertThat(latch.await(2, TimeUnit.SECONDS))
-        .as("channel subscriptions were not received")
-        .isTrue();
+    await().until(() -> mockSubscriber.getSubscribedChannels() == 1);
 
     mockSubscriber.psubscribe("sal*s");
+
+    await().until(() -> mockSubscriber.getSubscribedChannels() == 2);
 
     Long result = publisher.publish("salutations", "hello");
     assertThat(result).isEqualTo(2);
 
     mockSubscriber.punsubscribe("sal*s");
+    await().until(() -> mockSubscriber.getSubscribedChannels() == 1);
+
     mockSubscriber.unsubscribe("salutations");
-    subscriberThread.join(2000);
+    await().until(() -> mockSubscriber.getSubscribedChannels() == 0);
 
-    assertThat(subscriberThread.isAlive())
-        .as("subscriber thread should not be alive")
-        .isFalse();
+    await().until(() -> !subscriberThread.isAlive());
 
-    assertThat(mockSubscriber.getReceivedMessages()).isEmpty();
+    assertThat(mockSubscriber.getReceivedMessages()).containsExactly("hello", "hello");
   }
 }
