@@ -141,7 +141,7 @@ public abstract class AbstractExecutor implements Executor {
     ByteBuf rsp;
     try {
       if (message instanceof Collection) {
-        rsp = Coder.getBulkStringArrayResponse(context.getByteBufAllocator(),
+        rsp = Coder.getArrayResponse(context.getByteBufAllocator(),
             (Collection<?>) message);
       } else {
         rsp = Coder.getBulkStringResponse(context.getByteBufAllocator(), message);
