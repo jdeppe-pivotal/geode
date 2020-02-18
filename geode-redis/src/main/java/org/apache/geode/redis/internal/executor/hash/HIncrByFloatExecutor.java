@@ -16,7 +16,9 @@ package org.apache.geode.redis.internal.executor.hash;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
@@ -79,8 +81,9 @@ public class HIncrByFloatExecutor extends HashExecutor {
     }
 
     ByteArrayWrapper key = command.getKey();
+    double value;
 
-
+    try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
     Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
 
     byte[] byteField = commandElems.get(FIELD_INDEX);
@@ -110,7 +113,6 @@ public class HIncrByFloatExecutor extends HashExecutor {
           Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
       return;
     }
-    double value;
 
     try {
       value = Coder.stringToDouble(valueS);
@@ -124,7 +126,16 @@ public class HIncrByFloatExecutor extends HashExecutor {
     map.put(field, new ByteArrayWrapper(Coder.doubleToBytes(value)));
 
     this.saveMap(map, context, key);
-
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      command.setResponse(
+              Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+      return;
+    } catch (TimeoutException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+              "Timeout acquiring lock. Please try again."));
+      return;
+    }
     respondBulkStrings(command, context, value);
   }
 

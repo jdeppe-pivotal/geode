@@ -17,6 +17,7 @@ package org.apache.geode.redis;
 import static org.apache.geode.distributed.ConfigurationProperties.LOCATORS;
 import static org.apache.geode.distributed.ConfigurationProperties.LOG_LEVEL;
 import static org.apache.geode.distributed.ConfigurationProperties.MCAST_PORT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
@@ -55,6 +57,7 @@ public class HashesJUnitTest {
   private static GemFireCache cache;
   private static Random rand;
   private static int port = 6379;
+  private static int ITERATION_COUNT = 10;
 
   @BeforeClass
   public static void setUp() throws IOException {
@@ -433,6 +436,183 @@ public class HashesJUnitTest {
     assertTrue(map.values().contains(field1Value));
     assertTrue(map.values().contains(field2Value));
 
+  }
+
+  @Test
+  public void testConcurrentHSet_differentKeyPerClient() throws InterruptedException {
+    String key1 = "HSET" + randString();
+    String key2 = "HSET" + randString();
+    Map<String, String> record1 = new HashMap<String, String>();
+    Map<String, String> record2 = new HashMap<String, String>();
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    Runnable runnable1 = () -> doABunchOfHSets(key1, record1, jedis);
+    Runnable runnable2 = () -> doABunchOfHSets(key2, record2, jedis2);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    Map<String, String> result = jedis.hgetAll(key1);
+    assertEquals(record1.size(), result.size());
+    assertThat(result.keySet().containsAll(record1.keySet())).isTrue();
+    assertThat(result.values().containsAll(record1.values())).isTrue();
+
+    Map<String, String> result2 = jedis.hgetAll(key2);
+    assertEquals(record2.size(), result2.size());
+    assertThat(result2.keySet().containsAll(record2.keySet())).isTrue();
+    assertThat(result2.values().containsAll(record2.values())).isTrue();
+  }
+
+  @Test
+  public void testConcurrentHSet_sameKeyPerClient() throws InterruptedException {
+    String key1 = "HSET" + randString();
+    Map<String, String> record1 = new HashMap<String, String>();
+    Map<String, String> record2 = new HashMap<String, String>();
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    Runnable runnable1 = () -> doABunchOfHSets(key1, record1, jedis);
+    Runnable runnable2 = () -> doABunchOfHSets(key1, record2, jedis2);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    Map<String, String> result = jedis.hgetAll(key1);
+    assertEquals(record1.size() + record2.size(), result.size());
+    assertThat(result.keySet().containsAll(record1.keySet())).isTrue();
+    assertThat(result.keySet().containsAll(record2.keySet())).isTrue();
+    assertThat(result.values().containsAll(record1.values())).isTrue();
+    assertThat(result.values().containsAll(record2.values())).isTrue();
+  }
+
+  @Test
+  public void testConcurrentHIncr_sameKeyPerClient() throws InterruptedException {
+    String key1 = "HSET" + randString();
+    String field = "FIELD" + randString();
+
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    jedis.hset(key1, field, "0");
+
+    Runnable runnable1 = () -> doABunchOfHIncrs(key1, field, ITERATION_COUNT / 2, jedis);
+    Runnable runnable2 = () -> doABunchOfHIncrs(key1, field, ITERATION_COUNT / 2, jedis2);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    String value = jedis.hget(key1, field);
+    assertThat(value).isEqualTo("1000");
+  }
+
+  private void doABunchOfHIncrs(String key, String field, int incrCount, Jedis jedis) {
+    for (int i = 0; i < incrCount; i++) {
+      jedis.hincrBy(key, field, 1);
+    }
+  }
+
+  @Test
+  public void testConcurrentHIncrByFloat_sameKeyPerClient() throws InterruptedException {
+    String key = "HSET" + randString();
+    String field = "FIELD" + randString();
+
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    jedis.hset(key, field, "0");
+
+    Runnable runnable1 = () -> doABunchOfHIncrByFloats(key, field, ITERATION_COUNT / 2, 1.0, jedis);
+    Runnable runnable2 =
+        () -> doABunchOfHIncrByFloats(key, field, ITERATION_COUNT / 2, 0.5, jedis2);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    String value = jedis.hget(key, field);
+    assertThat(value).isEqualTo("750.0");
+  }
+
+  private void doABunchOfHIncrByFloats(String key, String field, int incrCount, double incrValue,
+      Jedis jedis) {
+    for (int i = 0; i < incrCount; i++) {
+      jedis.hincrByFloat(key, field, incrValue);
+    }
+  }
+
+
+  @Test
+  public void testConcurrentHSetHDel_sameKeyPerClient() throws InterruptedException {
+    String key1 = "HSET" + randString();
+
+    ArrayBlockingQueue<String> blockingQueue = new ArrayBlockingQueue<String>(ITERATION_COUNT);
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    Runnable runnable1 = () -> doABunchOfHSetsWithBlockingQueue(key1, blockingQueue, jedis);
+    Runnable runnable2 = () -> doABunchOfHDelsWithBlockingQueue(key1, blockingQueue, jedis2);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    Map<String, String> result = jedis.hgetAll(key1);
+    assertThat(result).isEmpty();
+  }
+
+  private void doABunchOfHDelsWithBlockingQueue(String key,
+      ArrayBlockingQueue<String> blockingQueue, Jedis jedis) {
+    String field;
+    int i, takeCount = 0, deletedCount = 0;
+    for (i = 0; i < ITERATION_COUNT; i++) {
+      try {
+        field = blockingQueue.take();
+        takeCount++;
+      } catch (InterruptedException e) {
+        System.out.println("Whoops, we blew up!!!!");
+        throw new RuntimeException(e);
+      }
+      deletedCount += jedis.hdel(key, field);
+    }
+    assertThat(i).isEqualTo(ITERATION_COUNT);
+    assertThat(takeCount).isEqualTo(ITERATION_COUNT);
+    assertThat(deletedCount).isEqualTo(ITERATION_COUNT);
+  }
+
+  private void doABunchOfHSetsWithBlockingQueue(String key,
+      ArrayBlockingQueue<String> blockingQueue, Jedis jedis) {
+    String field;
+    String fieldValue;
+    for (int i = 0; i < ITERATION_COUNT; i++) {
+      field = randString();
+      fieldValue = randString();
+
+      blockingQueue.add(field);
+
+      jedis.hset(key, field, fieldValue);
+    }
+  }
+
+  private void doABunchOfHSets(String key, Map<String, String> record, Jedis jedis) {
+    String field;
+    String fieldValue;
+    for (int i = 0; i < ITERATION_COUNT; i++) {
+      field = randString();
+      fieldValue = randString();
+
+      record.put(field, fieldValue);
+
+      jedis.hset(key, field, fieldValue);
+    }
   }
 
   private String randString() {

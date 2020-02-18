@@ -16,7 +16,9 @@ package org.apache.geode.redis.internal.executor.hash;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
@@ -78,57 +80,65 @@ public class HIncrByExecutor extends HashExecutor {
 
     ByteArrayWrapper key = command.getKey();
 
-
-    Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
-
-    byte[] byteField = commandElems.get(FIELD_INDEX);
-    ByteArrayWrapper field = new ByteArrayWrapper(byteField);
-
-    /*
-     * Put increment as value if field doesn't exist
-     */
-
-    ByteArrayWrapper oldValue = map.get(field);
-
-    if (oldValue == null) {
-      map.put(field, new ByteArrayWrapper(incrArray));
-
-      saveMap(map, context, key);
-
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), increment));
-
-      return;
-    }
-
-    /*
-     * If the field did exist then increment the field
-     */
-
     long value;
 
-    try {
-      value = Long.parseLong(oldValue.toString());
-    } catch (NumberFormatException e) {
+    try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
+      Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
+
+      byte[] byteField = commandElems.get(FIELD_INDEX);
+      ByteArrayWrapper field = new ByteArrayWrapper(byteField);
+
+      /*
+       * Put increment as value if field doesn't exist
+       */
+
+      ByteArrayWrapper oldValue = map.get(field);
+
+      if (oldValue == null) {
+        map.put(field, new ByteArrayWrapper(incrArray));
+
+        saveMap(map, context, key);
+
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), increment));
+
+        return;
+      }
+
+      /*
+       * If the field did exist then increment the field
+       */
+      try {
+        value = Long.parseLong(oldValue.toString());
+      } catch (NumberFormatException e) {
+        command.setResponse(
+                Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
+        return;
+      }
+
+      /*
+       * Check for overflow
+       */
+      if ((value >= 0 && increment > (Long.MAX_VALUE - value))
+              || (value <= 0 && increment < (Long.MIN_VALUE - value))) {
+        command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_OVERFLOW));
+        return;
+      }
+
+      value += increment;
+
+      map.put(field, new ByteArrayWrapper(Coder.longToBytes(value)));
+
+      saveMap(map, context, key);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
       command.setResponse(
-          Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
+              Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+      return;
+    } catch (TimeoutException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+              "Timeout acquiring lock. Please try again."));
       return;
     }
-
-    /*
-     * Check for overflow
-     */
-    if ((value >= 0 && increment > (Long.MAX_VALUE - value))
-        || (value <= 0 && increment < (Long.MIN_VALUE - value))) {
-      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_OVERFLOW));
-      return;
-    }
-
-    value += increment;
-
-    map.put(field, new ByteArrayWrapper(Coder.longToBytes(value)));
-
-    saveMap(map, context, key);
-
     command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), value));
 
   }
