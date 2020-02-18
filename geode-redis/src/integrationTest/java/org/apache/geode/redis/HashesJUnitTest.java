@@ -440,10 +440,25 @@ public class HashesJUnitTest {
   @Test
   public void testHsetHandlesMultipleFields() {
     String key = "HMSET" + randString();
-    String field1 = randString();
-    String field2 = randString();
+    String field1 = "F1" + randString();
+    String field2 = "F2" + randString();
     String field1Value = randString();
     String field2Value = randString();
+    Long fieldsAdded;
+
+    Map<String, String> hsetMap = new HashMap<>();
+    hsetMap.put(field1, field1Value);
+    hsetMap.put(field2, field2Value);
+
+    fieldsAdded = jedis.hset(key, hsetMap);
+
+    Map<String, String> result = jedis.hgetAll(key);
+
+    assertThat(result).isEqualTo(hsetMap);
+    assertThat(fieldsAdded).isEqualTo(2);
+
+    fieldsAdded = jedis.hset(key, hsetMap);
+    assertThat(fieldsAdded).isEqualTo(0);
   }
 
   @Test

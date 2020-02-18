@@ -53,7 +53,7 @@ public class HSetExecutor extends HashExecutor implements Extendable {
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
 
-    if (commandElems.size() < 4) {
+    if (commandElems.size() < 4 || commandElems.size() % 2 == 1) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), getArgsError()));
       return;
     }
@@ -62,18 +62,27 @@ public class HSetExecutor extends HashExecutor implements Extendable {
 
 
     Object oldValue;
-    byte[] byteField = commandElems.get(FIELD_INDEX);
-    byte[] value = commandElems.get(VALUE_INDEX);
-    ByteArrayWrapper field = new ByteArrayWrapper(byteField);
-    ByteArrayWrapper putValue = new ByteArrayWrapper(value);
+    int fieldsAdded = 0;
 
     try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
       Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
 
-      if (onlySetOnAbsent())
-        oldValue = map.putIfAbsent(field, putValue);
-      else
-        oldValue = map.put(field, putValue);
+      for (int i = 2; i < commandElems.size(); i += 2) {
+        byte[] fieldArray = commandElems.get(i);
+        ByteArrayWrapper field = new ByteArrayWrapper(fieldArray);
+        byte[] value = commandElems.get(i + 1);
+        ByteArrayWrapper putValue = new ByteArrayWrapper(value);
+
+        if (onlySetOnAbsent()) {
+          oldValue = map.putIfAbsent(field, putValue);
+        } else {
+          oldValue = map.put(field, putValue);
+        }
+
+        if (oldValue == null) {
+          fieldsAdded++;
+        }
+      }
 
       this.saveMap(map, context, key);
     } catch (InterruptedException e) {
@@ -87,10 +96,7 @@ public class HSetExecutor extends HashExecutor implements Extendable {
       return;
     }
 
-    if (oldValue == null)
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NEW_FIELD));
-    else
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), EXISTING_FIELD));
+    command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), fieldsAdded));
   }
 
   protected boolean onlySetOnAbsent() {
