@@ -17,15 +17,16 @@ package org.apache.geode.redis.internal.executor.set;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.geode.cache.Region;
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
 import org.apache.geode.redis.internal.ExecutionHandlerContext;
 import org.apache.geode.redis.internal.RedisConstants.ArityDef;
 import org.apache.geode.redis.internal.RedisDataType;
-import org.apache.geode.redis.internal.RegionProvider;
 
 public class SMoveExecutor extends SetExecutor {
 
@@ -44,46 +45,53 @@ public class SMoveExecutor extends SetExecutor {
 
     ByteArrayWrapper source = command.getKey();
     ByteArrayWrapper destination = new ByteArrayWrapper(commandElems.get(2));
-    ByteArrayWrapper mem = new ByteArrayWrapper(commandElems.get(3));
+    ByteArrayWrapper member = new ByteArrayWrapper(commandElems.get(3));
 
     checkDataType(source, RedisDataType.REDIS_SET, context);
     checkDataType(destination, RedisDataType.REDIS_SET, context);
 
     Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = getRegion(context);
 
-    Set<ByteArrayWrapper> sourceSet = region.get(source);
+    try (AutoCloseableLock regionLock = withRegionLock(context, source)) {
+      Set<ByteArrayWrapper> sourceSet = region.get(source);
 
-    if (sourceSet == null) {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
+      if (sourceSet == null) {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
+        return;
+      }
+
+      sourceSet = new HashSet<>(sourceSet); // copy to support transactions;
+      boolean removed = sourceSet.remove(member);
+
+      Set<ByteArrayWrapper> destinationSet = region.get(destination);
+
+      if (destinationSet == null)
+        destinationSet = new HashSet<>();
+      else
+        destinationSet = new HashSet<>(destinationSet); // copy to support transactions
+
+      destinationSet.add(member);
+
+      region.put(destination, destinationSet);
+      context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
+
+      region.put(source, sourceSet);
+      context.getKeyRegistrar().register(source, RedisDataType.REDIS_SET);
+
+      if (!removed) {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
+      } else {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), MOVED));
+      }
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      command.setResponse(
+          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
       return;
-    }
-
-    sourceSet = new HashSet<ByteArrayWrapper>(sourceSet); // copy to support transactions;
-    boolean removed = sourceSet.remove(mem);
-
-
-    Set<ByteArrayWrapper> destinationSet = region.get(destination);
-
-    if (destinationSet == null)
-      destinationSet = new HashSet<ByteArrayWrapper>();
-    else
-      destinationSet = new HashSet<ByteArrayWrapper>(destinationSet); // copy to support
-                                                                      // transactions
-
-    destinationSet.add(mem);
-
-    RegionProvider rc = context.getRegionProvider();
-
-    region.put(destination, destinationSet);
-    context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
-
-    region.put(source, sourceSet);
-    context.getKeyRegistrar().register(source, RedisDataType.REDIS_SET);
-
-    if (!removed) {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
-    } else {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), MOVED));
+    } catch (TimeoutException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+          "Timeout acquiring lock. Please try again."));
+      return;
     }
 
   }

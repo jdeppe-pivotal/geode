@@ -17,13 +17,19 @@ package org.apache.geode.redis;
 import static org.apache.geode.distributed.ConfigurationProperties.LOCATORS;
 import static org.apache.geode.distributed.ConfigurationProperties.LOG_LEVEL;
 import static org.apache.geode.distributed.ConfigurationProperties.MCAST_PORT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -45,6 +51,7 @@ public class SetsJUnitTest {
   private static GemFireCache cache;
   private static ThreePhraseGenerator generator = new ThreePhraseGenerator();
   private static int port = 6379;
+  private static int ITERATIONS = 1000;
 
   @BeforeClass
   public static void setUp() throws IOException {
@@ -230,6 +237,77 @@ public class SetsJUnitTest {
     Set<String> destResult = jedis.smembers(destination);
 
     assertEquals(result, destResult);
+  }
+
+  @Test
+  public void testConcurrentSadd() throws InterruptedException {
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+    String key = generator.generate('x');
+
+    Runnable runnable1 = () -> doABunchOfSadds(jedis, key, 1);
+    Runnable runnable2 = () -> doABunchOfSadds(jedis2, key, 2);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    assertThat(jedis.scard(key)).isEqualTo(ITERATIONS * 2);
+  }
+
+  @Test
+  public void testConcurrentSmove() throws InterruptedException {
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+    String source = generator.generate('x');
+    String destination = generator.generate('x');
+
+    List<String> fields = new ArrayList<>();
+    for (int i = 0; i < ITERATIONS; i++) {
+      String field = "value-" + i;
+      jedis.sadd(source, field);
+      fields.add(field);
+    }
+
+    Collections.shuffle(fields);
+    BlockingQueue shuffledFields = new ArrayBlockingQueue(ITERATIONS, true, fields);
+
+    Runnable runnable1 = () -> doABunchOfSMoves(jedis, source, destination, shuffledFields);
+    Runnable runnable2 = () -> doABunchOfSMoves(jedis2, source, destination, shuffledFields);
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    assertThat(jedis.scard(source)).isEqualTo(0);
+    assertThat(jedis.scard(destination)).isEqualTo(ITERATIONS);
+  }
+
+  private void doABunchOfSMoves(Jedis client, String source, String destination,
+      BlockingQueue<String> shuffledFields) {
+    String member;
+    while (true) {
+      try {
+        member = shuffledFields.poll(100, TimeUnit.MILLISECONDS);
+        if (member == null) {
+          return;
+        }
+      } catch (InterruptedException e) {
+        return;
+      }
+
+      client.smove(source, destination, member);
+    }
+  }
+
+  private void doABunchOfSadds(Jedis client, String key, int index) {
+    for (int i = 0; i < ITERATIONS; i++) {
+      client.sadd(key, String.format("value-%d-%d", index, i));
+    }
   }
 
   @After
