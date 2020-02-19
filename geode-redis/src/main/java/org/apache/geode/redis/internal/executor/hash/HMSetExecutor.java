@@ -16,7 +16,9 @@ package org.apache.geode.redis.internal.executor.hash;
 
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeoutException;
 
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
@@ -43,8 +45,6 @@ import org.apache.geode.redis.internal.RedisDataType;
  * "World"
  *
  * </pre>
- *
- *
  */
 public class HMSetExecutor extends HashExecutor {
 
@@ -60,18 +60,28 @@ public class HMSetExecutor extends HashExecutor {
     }
 
     ByteArrayWrapper key = command.getKey();
+    try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
+      Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
 
-    Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
+      for (int i = 2; i < commandElems.size(); i += 2) {
+        byte[] fieldArray = commandElems.get(i);
+        ByteArrayWrapper field = new ByteArrayWrapper(fieldArray);
+        byte[] value = commandElems.get(i + 1);
+        map.put(field, new ByteArrayWrapper(value));
+      }
 
-    for (int i = 2; i < commandElems.size(); i += 2) {
-      byte[] fieldArray = commandElems.get(i);
-      ByteArrayWrapper field = new ByteArrayWrapper(fieldArray);
-      byte[] value = commandElems.get(i + 1);
-      map.put(field, new ByteArrayWrapper(value));
+      saveMap(map, context, key);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      command.setResponse(
+          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+      return;
+    } catch (
+        TimeoutException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+          "Timeout acquiring lock. Please try again."));
+      return;
     }
-
-    saveMap(map, context, key);
-
     context.getKeyRegistrar().register(key, RedisDataType.REDIS_HASH);
     command.setResponse(Coder.getSimpleStringResponse(context.getByteBufAllocator(), SUCCESS));
   }

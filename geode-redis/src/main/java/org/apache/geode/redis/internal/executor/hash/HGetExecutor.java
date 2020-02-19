@@ -56,34 +56,24 @@ public class HGetExecutor extends HashExecutor {
 
     ByteArrayWrapper key = command.getKey();
 
-    try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
-      Map<ByteArrayWrapper, ByteArrayWrapper> entry = getMap(context, key);
+    Map<ByteArrayWrapper, ByteArrayWrapper> entry = getMap(context, key);
 
-      if (entry == null) {
+    if (entry == null) {
+      command.setResponse(Coder.getNilResponse(context.getByteBufAllocator()));
+      return;
+    }
+
+    ByteArrayWrapper valueWrapper = entry.get(field);
+    try {
+      if (valueWrapper != null) {
+        command.setResponse(
+            Coder.getBulkStringResponse(context.getByteBufAllocator(), valueWrapper.toBytes()));
+      } else {
         command.setResponse(Coder.getNilResponse(context.getByteBufAllocator()));
-        return;
       }
-
-      ByteArrayWrapper valueWrapper = entry.get(field);
-      try {
-        if (valueWrapper != null) {
-          command.setResponse(
-              Coder.getBulkStringResponse(context.getByteBufAllocator(), valueWrapper.toBytes()));
-        } else {
-          command.setResponse(Coder.getNilResponse(context.getByteBufAllocator()));
-        }
-      } catch (CoderException e) {
-        command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
-            RedisConstants.SERVER_ERROR_MESSAGE));
-      }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      command.setResponse(
-          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
-    } catch (TimeoutException e) {
+    } catch (CoderException e) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
-          "Timeout acquiring lock. Please try again."));
+          RedisConstants.SERVER_ERROR_MESSAGE));
     }
   }
-
 }

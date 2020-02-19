@@ -26,6 +26,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +35,12 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.After;
@@ -57,7 +64,7 @@ public class HashesJUnitTest {
   private static GemFireCache cache;
   private static Random rand;
   private static int port = 6379;
-  private static int ITERATION_COUNT = 1000;
+  private static int ITERATION_COUNT = 4000;
 
   @BeforeClass
   public static void setUp() throws IOException {
@@ -316,7 +323,6 @@ public class HashesJUnitTest {
     assertEquals(2, list.size());
 
     list.contains(value);
-
   }
 
   /**
@@ -469,8 +475,8 @@ public class HashesJUnitTest {
     Map<String, String> record2 = new HashMap<String, String>();
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
 
-    Runnable runnable1 = () -> doABunchOfHSets(key1, record1, jedis);
-    Runnable runnable2 = () -> doABunchOfHSets(key2, record2, jedis2);
+    Runnable runnable1 = () -> doABunchOfHMSets(key1, record1, jedis);
+    Runnable runnable2 = () -> doABunchOfHMSets(key2, record2, jedis2);
     Thread thread1 = new Thread(runnable1);
     Thread thread2 = new Thread(runnable2);
     thread1.start();
@@ -491,13 +497,13 @@ public class HashesJUnitTest {
 
   @Test
   public void testConcurrentHMSet_sameKeyPerClient() throws InterruptedException {
-    String key1 = "HSET" + randString();
+    String key = "HMSET" + randString();
     Map<String, String> record1 = new HashMap<String, String>();
     Map<String, String> record2 = new HashMap<String, String>();
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
 
-    Runnable runnable1 = () -> doABunchOfHSets(key1, record1, jedis);
-    Runnable runnable2 = () -> doABunchOfHSets(key1, record2, jedis2);
+    Runnable runnable1 = () -> doABunchOfHMSets(key, record1, jedis);
+    Runnable runnable2 = () -> doABunchOfHMSets(key, record2, jedis2);
     Thread thread1 = new Thread(runnable1);
     Thread thread2 = new Thread(runnable2);
     thread1.start();
@@ -505,12 +511,56 @@ public class HashesJUnitTest {
     thread1.join();
     thread2.join();
 
-    Map<String, String> result = jedis.hgetAll(key1);
+    Map<String, String> result = jedis.hgetAll(key);
     assertEquals(record1.size() + record2.size(), result.size());
     assertThat(result.keySet().containsAll(record1.keySet())).isTrue();
     assertThat(result.keySet().containsAll(record2.keySet())).isTrue();
     assertThat(result.values().containsAll(record1.values())).isTrue();
     assertThat(result.values().containsAll(record2.values())).isTrue();
+  }
+
+  @Test
+  public void testConcurrentHSetNX() throws InterruptedException, ExecutionException {
+    String key = "HSETNX" + randString();
+
+    ArrayList<String> fields = new ArrayList<>(ITERATION_COUNT);
+
+    for (int i=0; i< ITERATION_COUNT; i++) {
+      fields.add(randString());
+    }
+
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    CountDownLatch latch = new CountDownLatch(1);
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    Callable<Integer> callable1 = () -> doABunchOfHSetNXs(key, fields, "Thread1", jedis, latch);
+    Callable<Integer> callable2 = () -> doABunchOfHSetNXs(key, fields, "Thread2", jedis2, latch);
+    Future<Integer> future1 = pool.submit(callable1);
+    Future<Integer> future2 = pool.submit(callable2);
+
+    latch.countDown();
+    assertThat(future1.get() + future2.get()).isEqualTo(ITERATION_COUNT);
+
+    System.out.println("T1: " + future1.get() + " T2: " + future2.get());
+    assertThat(future1.get()).isGreaterThan(0);
+    assertThat(future2.get()).isGreaterThan(0);
+
+    pool.shutdown();
+  }
+
+  private int doABunchOfHSetNXs(String key, ArrayList<String> fields, String fieldValue,
+                                Jedis jedis, CountDownLatch latch) throws InterruptedException {
+    int successes = 0;
+
+//    latch.await();
+    for (int i = 0; i < ITERATION_COUNT; i++) {
+      if (jedis.hsetnx(key, fields.get(i), fieldValue) == 1) {
+        successes++;
+//        Thread.sleep(randSleepMillis());
+        Thread.yield();
+      }
+    }
+    return successes;
   }
 
   @Test
@@ -684,9 +734,28 @@ public class HashesJUnitTest {
     }
   }
 
+  private void doABunchOfHMSets(String key, Map<String, String> record, Jedis jedis) {
+    String field;
+    String fieldValue;
+    for (int i = 0; i < ITERATION_COUNT; i++) {
+      field = randString();
+      fieldValue = randString();
+      Map<String, String> hmsetMap = new HashMap<>();
+      hmsetMap.put(field, fieldValue);
+
+      record.put(field, fieldValue);
+
+      jedis.hmset(key, hmsetMap);
+    }
+  }
+
   private String randString() {
     int length = rand.nextInt(8) + 5;
     return RandomStringUtils.randomAlphanumeric(length);
+  }
+
+  private int randSleepMillis() {
+    return rand.nextInt(10) + 5;
   }
 
   @After
