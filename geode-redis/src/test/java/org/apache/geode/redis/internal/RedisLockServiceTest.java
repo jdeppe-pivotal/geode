@@ -39,11 +39,11 @@ public class RedisLockServiceTest {
     // test null handling
     Assert.assertFalse(lockService.lock(null));
 
-    Object key1 = "010";
+    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[]{97, 98, 99});
+    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[]{97, 98, 99});
 
     // test locks across threads
     Thread t1 = new Thread(() -> {
-
       try {
         lockService.lock(key1);
 
@@ -66,28 +66,34 @@ public class RedisLockServiceTest {
     t1.start();
     Thread.sleep(1000);
 
-    // test current thread cannot lock y key
+    // test current thread cannot lock the same key
     Assert.assertFalse(lockService.lock(key1));
+
+    // test current thread cannot lock the same (via equality) key
+    Assert.assertFalse(lockService.lock(key2));
 
     // set flag for thread to unlock key
     RedisLockServiceTest.testLockBool = true;
-    Thread.sleep(1000);
+    t1.join();
 
     // assert true you can now lock the service
     Assert.assertTrue(lockService.lock(key1));
-
-    Object key2 = 123;
     Assert.assertTrue(lockService.lock(key2));
 
-    // check weak reference support
-    key2 = null;
-    System.gc();
-
-    // lock should be removed when not references to key
-    Assert.assertNull(lockService.getLock(123));
-
-    // check that thread 1 has stopped
-    t1.join();
+    // TODO: clean this up - either remove or fix if we switch to some other backing structure in
+    // RedisLockServiceTest
+    // Object key2 = 123;
+    // Assert.assertTrue(lockService.lock(key2));
+    //
+    // // check weak reference support
+    // key2 = null;
+    // System.gc();
+    //
+    // // lock should be removed when not references to key
+    // Assert.assertNull(lockService.getLock(123));
+    //
+    // // check that thread 1 has stopped
+    // t1.join();
   }
 
   /**
