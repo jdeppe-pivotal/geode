@@ -39,8 +39,8 @@ public class RedisLockServiceTest {
     // test null handling
     Assert.assertFalse(lockService.lock(null));
 
-    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[]{97, 98, 99});
-    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[]{97, 98, 99});
+    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[] {97, 98, 99});
+    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[] {97, 98, 99});
 
     // test locks across threads
     Thread t1 = new Thread(() -> {
