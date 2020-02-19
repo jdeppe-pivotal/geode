@@ -50,6 +50,7 @@ public class ExecutionHandlerContextTest {
     GeodeRedisServer server = Mockito.mock(GeodeRedisServer.class);
     RedisCommandType redisCommandType = Mockito.mock(RedisCommandType.class);
     KeyRegistrar keyRegistrar = Mockito.mock(KeyRegistrar.class);
+    PubSub pubSub = Mockito.mock(PubSub.class);
 
     Mockito.when(cache.getLogger()).thenReturn(logWriter);
     Mockito.when(ch.pipeline()).thenReturn(channelPipeline);
@@ -59,7 +60,7 @@ public class ExecutionHandlerContextTest {
 
     byte[] pwd = null;
     ExecutionHandlerContext handler =
-        new ExecutionHandlerContext(ch, cache, regionProvider, server, pwd, keyRegistrar);
+        new ExecutionHandlerContext(ch, cache, regionProvider, server, pwd, keyRegistrar, pubSub);
 
     Mockito.when(msg.getCommandType()).thenReturn(redisCommandType);
     Executor exec = Mockito.mock(Executor.class);

@@ -28,11 +28,9 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class RedisLockService {
 
-
   private static final int DEFAULT_TIMEOUT = 1000;
   private final int timeoutMS;
   private ConcurrentMap<Object, Lock> map = new ConcurrentHashMap<>();
-
 
   /**
    * Construct with the default 1000ms timeout setting
@@ -57,8 +55,9 @@ public class RedisLockService {
    * @return true if lock establish prior to timeout
    */
   public boolean lock(Object name) throws InterruptedException {
-    if (name == null)
+    if (name == null) {
       return false;
+    }
 
     Lock lock = new ReentrantLock();
     Lock oldLock = map.putIfAbsent(name, lock);
@@ -74,8 +73,9 @@ public class RedisLockService {
    * @param name the lock name
    */
   public void unlock(Object name) {
-    if (name == null)
+    if (name == null) {
       return;
+    }
 
     Lock lock = map.get(name);
 
@@ -93,7 +93,7 @@ public class RedisLockService {
    * @return the manage lock (null if does not exist)
    */
   Lock getLock(Object name) {
-    return map.get(name);
+    return name != null ? map.get(name) : null;
   }
 
 }

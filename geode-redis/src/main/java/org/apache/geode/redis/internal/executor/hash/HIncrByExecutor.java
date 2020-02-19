@@ -111,7 +111,7 @@ public class HIncrByExecutor extends HashExecutor {
         value = Long.parseLong(oldValue.toString());
       } catch (NumberFormatException e) {
         command.setResponse(
-                Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
+            Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
         return;
       }
 
@@ -119,7 +119,7 @@ public class HIncrByExecutor extends HashExecutor {
        * Check for overflow
        */
       if ((value >= 0 && increment > (Long.MAX_VALUE - value))
-              || (value <= 0 && increment < (Long.MIN_VALUE - value))) {
+          || (value <= 0 && increment < (Long.MIN_VALUE - value))) {
         command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_OVERFLOW));
         return;
       }
@@ -132,11 +132,11 @@ public class HIncrByExecutor extends HashExecutor {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       command.setResponse(
-              Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
       return;
     } catch (TimeoutException e) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
-              "Timeout acquiring lock. Please try again."));
+          "Timeout acquiring lock. Please try again."));
       return;
     }
     command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), value));

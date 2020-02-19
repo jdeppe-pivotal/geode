@@ -84,56 +84,56 @@ public class HIncrByFloatExecutor extends HashExecutor {
     double value;
 
     try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
-    Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
+      Map<ByteArrayWrapper, ByteArrayWrapper> map = getMap(context, key);
 
-    byte[] byteField = commandElems.get(FIELD_INDEX);
-    ByteArrayWrapper field = new ByteArrayWrapper(byteField);
+      byte[] byteField = commandElems.get(FIELD_INDEX);
+      ByteArrayWrapper field = new ByteArrayWrapper(byteField);
 
-    /*
-     * Put increment as value if field doesn't exist
-     */
+      /*
+       * Put increment as value if field doesn't exist
+       */
 
-    ByteArrayWrapper oldValue = map.get(field);
+      ByteArrayWrapper oldValue = map.get(field);
 
-    if (oldValue == null) {
-      map.put(field, new ByteArrayWrapper(incrArray));
+      if (oldValue == null) {
+        map.put(field, new ByteArrayWrapper(incrArray));
+
+        this.saveMap(map, context, key);
+
+        respondBulkStrings(command, context, increment);
+        return;
+      }
+
+      /*
+       * If the field did exist then increment the field
+       */
+      String valueS = oldValue.toString();
+      if (valueS.contains(" ")) {
+        command.setResponse(
+            Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
+        return;
+      }
+
+      try {
+        value = Coder.stringToDouble(valueS);
+      } catch (NumberFormatException e) {
+        command.setResponse(
+            Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
+        return;
+      }
+
+      value += increment;
+      map.put(field, new ByteArrayWrapper(Coder.doubleToBytes(value)));
 
       this.saveMap(map, context, key);
-
-      respondBulkStrings(command, context, increment);
-      return;
-    }
-
-    /*
-     * If the field did exist then increment the field
-     */
-    String valueS = oldValue.toString();
-    if (valueS.contains(" ")) {
-      command.setResponse(
-          Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
-      return;
-    }
-
-    try {
-      value = Coder.stringToDouble(valueS);
-    } catch (NumberFormatException e) {
-      command.setResponse(
-          Coder.getErrorResponse(context.getByteBufAllocator(), ERROR_FIELD_NOT_USABLE));
-      return;
-    }
-
-    value += increment;
-    map.put(field, new ByteArrayWrapper(Coder.doubleToBytes(value)));
-
-    this.saveMap(map, context, key);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       command.setResponse(
-              Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
       return;
     } catch (TimeoutException e) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
-              "Timeout acquiring lock. Please try again."));
+          "Timeout acquiring lock. Please try again."));
       return;
     }
     respondBulkStrings(command, context, value);

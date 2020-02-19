@@ -66,7 +66,6 @@ public class RedisLockServiceTest {
     t1.start();
     Thread.sleep(1000);
 
-
     // test current thread cannot lock y key
     Assert.assertFalse(lockService.lock(key1));
 
@@ -77,8 +76,7 @@ public class RedisLockServiceTest {
     // assert true you can now lock the service
     Assert.assertTrue(lockService.lock(key1));
 
-
-    Object key2 = new Integer(123);
+    Object key2 = 123;
     Assert.assertTrue(lockService.lock(key2));
 
     // check weak reference support
@@ -86,11 +84,10 @@ public class RedisLockServiceTest {
     System.gc();
 
     // lock should be removed when not references to key
-    Assert.assertNull(lockService.getLock(Integer.valueOf(123)));
+    Assert.assertNull(lockService.getLock(123));
 
     // check that thread 1 has stopped
     t1.join();
-
   }
 
   /**
@@ -148,15 +145,16 @@ public class RedisLockServiceTest {
 
   @Test
   public void testGetLock() throws InterruptedException {
-
-    Object obj = Integer.valueOf(2);
+    Object obj = 2;
     RedisLockService lockService = new RedisLockService();
 
     Assert.assertNull(lockService.getLock(null));
     Assert.assertNull(lockService.getLock(obj));
+
     lockService.lock(obj);
+
     Assert.assertNotNull(lockService.getLock(obj));
-    lockService.unlock(Integer.valueOf(2));
+    lockService.unlock(2);
 
     // check lock removed
     Assert.assertNull(lockService.getLock(obj));

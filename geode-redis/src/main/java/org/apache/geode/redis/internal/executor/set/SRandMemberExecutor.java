@@ -91,8 +91,7 @@ public class SRandMemberExecutor extends SetExecutor {
             ByteArrayWrapper s = entries[rand.nextInt(entries.length)];
             randEntries.add(s);
           } while (randEntries.size() < count);
-          command.setResponse(
-              Coder.getBulkStringArrayResponse(context.getByteBufAllocator(), randEntries));
+          command.setResponse(Coder.getArrayResponse(context.getByteBufAllocator(), randEntries));
         } else {
           count = -count;
           List<ByteArrayWrapper> randEntries = new ArrayList<ByteArrayWrapper>();
@@ -100,8 +99,7 @@ public class SRandMemberExecutor extends SetExecutor {
             ByteArrayWrapper s = entries[rand.nextInt(entries.length)];
             randEntries.add(s);
           }
-          command.setResponse(
-              Coder.getBulkStringArrayResponse(context.getByteBufAllocator(), randEntries));
+          command.setResponse(Coder.getArrayResponse(context.getByteBufAllocator(), randEntries));
         }
       } catch (CoderException e) {
         command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),

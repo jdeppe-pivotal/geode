@@ -57,7 +57,6 @@ public class RegionProviderTest {
   @SuppressWarnings("unchecked")
   @Before
   public void setUp() {
-
     Region<ByteArrayWrapper, ByteArrayWrapper> stringsRegion = Mockito.mock(Region.class);
 
     Region<ByteArrayWrapper, HyperLogLogPlus> hLLRegion = Mockito.mock(Region.class);
@@ -88,7 +87,6 @@ public class RegionProviderTest {
    */
   @Test
   public void testGetRegion() {
-
     Assert.assertNull(regionProvider.getRegion(null));
 
     Assert.assertNull(regionProvider.getRegion(Coder.stringToByteArrayWrapper("invalid")));
@@ -99,7 +97,6 @@ public class RegionProviderTest {
    */
   @Test
   public void testGetOrCreateRegion() {
-
     Region<?, ?> region = regionProvider.getOrCreateRegion(
         Coder.stringToByteArrayWrapper(NEW_REGION_NM), RedisDataType.REDIS_HASH, context);
     assertNotNull(region);

@@ -70,7 +70,7 @@ public class SMembersExecutor extends SetExecutor {
     }
 
     try {
-      command.setResponse(Coder.getBulkStringArrayResponse(context.getByteBufAllocator(), members));
+      command.setResponse(Coder.getArrayResponse(context.getByteBufAllocator(), members));
     } catch (CoderException e) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
           RedisConstants.SERVER_ERROR_MESSAGE));
