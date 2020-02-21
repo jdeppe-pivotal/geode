@@ -76,6 +76,9 @@ public class HashesJUnitTest {
     cf.set(LOCATORS, "");
     cache = cf.create();
     port = AvailablePortHelper.getRandomAvailableTCPPort();
+
+    System.setProperty(GeodeRedisServer.DEFAULT_REGION_SYS_PROP_NAME, "REPLICATE");
+
     server = new GeodeRedisServer("localhost", port);
 
     server.start();
@@ -525,7 +528,7 @@ public class HashesJUnitTest {
 
     ArrayList<String> fields = new ArrayList<>(ITERATION_COUNT);
 
-    for (int i=0; i< ITERATION_COUNT; i++) {
+    for (int i = 0; i < ITERATION_COUNT; i++) {
       fields.add(randString());
     }
 
@@ -549,14 +552,14 @@ public class HashesJUnitTest {
   }
 
   private int doABunchOfHSetNXs(String key, ArrayList<String> fields, String fieldValue,
-                                Jedis jedis, CountDownLatch latch) throws InterruptedException {
+      Jedis jedis, CountDownLatch latch) throws InterruptedException {
     int successes = 0;
 
-//    latch.await();
+    // latch.await();
     for (int i = 0; i < ITERATION_COUNT; i++) {
       if (jedis.hsetnx(key, fields.get(i), fieldValue) == 1) {
         successes++;
-//        Thread.sleep(randSleepMillis());
+        // Thread.sleep(randSleepMillis());
         Thread.yield();
       }
     }

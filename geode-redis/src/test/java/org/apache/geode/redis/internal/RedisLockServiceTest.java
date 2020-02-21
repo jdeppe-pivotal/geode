@@ -15,13 +15,14 @@
  */
 package org.apache.geode.redis.internal;
 
+
+import java.lang.ref.WeakReference;
+
 import org.junit.Assert;
 import org.junit.Test;
 
 /**
- *
  * Test cases for the Redis lock service
- *
  */
 public class RedisLockServiceTest {
   private static boolean testLockBool = false;
@@ -39,8 +40,8 @@ public class RedisLockServiceTest {
     // test null handling
     Assert.assertFalse(lockService.lock(null));
 
-    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[]{97, 98, 99});
-    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[]{97, 98, 99});
+    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[] {97, 98, 99});
+    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[] {97, 98, 99});
 
     // test locks across threads
     Thread t1 = new Thread(() -> {
@@ -151,19 +152,25 @@ public class RedisLockServiceTest {
 
   @Test
   public void testGetLock() throws InterruptedException {
-    Object obj = 2;
     RedisLockService lockService = new RedisLockService();
+    WeakReference<Object> ref;
+    {
+      Object obj = new Object();
+      ref = new WeakReference<>(obj);
 
-    Assert.assertNull(lockService.getLock(null));
-    Assert.assertNull(lockService.getLock(obj));
+      lockService.lock(obj);
+      Assert.assertEquals(1, lockService.getMapSize());
 
-    lockService.lock(obj);
+      lockService.unlock(obj);
+      obj = null; // even going out of scope doesn't kill it
+    }
 
-    Assert.assertNotNull(lockService.getLock(obj));
-    lockService.unlock(2);
+    System.gc();
+    System.runFinalization();
 
     // check lock removed
-    Assert.assertNull(lockService.getLock(obj));
+    Assert.assertNull(ref.get());
+    Assert.assertEquals(0, lockService.getMapSize());
   }
 
 }

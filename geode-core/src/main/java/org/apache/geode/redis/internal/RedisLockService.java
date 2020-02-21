@@ -15,8 +15,9 @@
  */
 package org.apache.geode.redis.internal;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.Collections;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,7 +31,8 @@ public class RedisLockService {
 
   private static final int DEFAULT_TIMEOUT = 1000;
   private final int timeoutMS;
-  private ConcurrentMap<Object, Lock> map = new ConcurrentHashMap<>();
+  private Map<Object, Lock> map =
+      Collections.synchronizedMap(new WeakHashMap<>());
 
   /**
    * Construct with the default 1000ms timeout setting
@@ -86,14 +88,8 @@ public class RedisLockService {
     lock.unlock();
   }
 
-  /**
-   * Retrieve the managed lock
-   *
-   * @param name the name key for lock
-   * @return the manage lock (null if does not exist)
-   */
-  Lock getLock(Object name) {
-    return name != null ? map.get(name) : null;
+  int getMapSize() {
+    return map.size();
   }
 
 }

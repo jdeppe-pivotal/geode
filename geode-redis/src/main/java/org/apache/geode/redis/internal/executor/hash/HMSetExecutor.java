@@ -76,8 +76,7 @@ public class HMSetExecutor extends HashExecutor {
       command.setResponse(
           Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
       return;
-    } catch (
-        TimeoutException e) {
+    } catch (TimeoutException e) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
           "Timeout acquiring lock. Please try again."));
       return;
