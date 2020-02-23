@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.geode.cache.TimeoutException;
+
 /**
  *
  * Locking mechanism to support Redis operations
@@ -52,39 +54,25 @@ public class RedisLockService {
   /**
    * Obtain a lock
    *
-   * @param name the lock name/key
+   * @param key the lock name/key
    * @return true if lock establish prior to timeout
    */
-  public boolean lock(ByteArrayWrapper name) throws InterruptedException {
-    if (name == null) {
-      return false;
+  public AutoCloseableLock lock(ByteArrayWrapper key) throws InterruptedException {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
     }
 
     Lock lock = new ReentrantLock();
-    Lock oldLock = map.putIfAbsent(name, lock);
+    Lock oldLock = map.putIfAbsent(key, lock);
     if (oldLock != null) {
       lock = oldLock;
     }
-    return lock.tryLock(timeoutMS, TimeUnit.MILLISECONDS);
-  }
 
-  /**
-   * Release the given lock
-   *
-   * @param name the lock name
-   */
-  public void unlock(Object name) {
-    if (name == null) {
-      return;
+    if (!lock.tryLock(timeoutMS, TimeUnit.MILLISECONDS)) {
+      throw new TimeoutException("Couldn't get lock for " + key.toString());
     }
 
-    Lock lock = map.get(name);
-
-    if (lock == null) {
-      return;
-    }
-
-    lock.unlock();
+    return new AutoCloseableLock(key, lock);
   }
 
   int getMapSize() {

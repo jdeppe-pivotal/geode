@@ -52,11 +52,8 @@ public abstract class SetExecutor extends AbstractExecutor {
   protected AutoCloseableLock withRegionLock(ExecutionHandlerContext context, ByteArrayWrapper key)
       throws InterruptedException, TimeoutException {
     RedisLockService lockService = context.getSetLockService();
-    boolean lock = lockService.lock(key);
-    if (!lock) {
-      throw new TimeoutException("Couldn't get lock for " + key.toString());
-    }
-    return new AutoCloseableLock(() -> lockService.unlock(key));
+
+    return lockService.lock(key);
   }
 
 }

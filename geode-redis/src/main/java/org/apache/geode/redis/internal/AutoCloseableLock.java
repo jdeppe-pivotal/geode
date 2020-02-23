@@ -15,19 +15,22 @@
  */
 package org.apache.geode.redis.internal;
 
+import java.util.concurrent.locks.Lock;
 
 /**
  * Created by gosullivan on 3/10/17.
  */
 public class AutoCloseableLock implements AutoCloseable {
-  Runnable unlock;
+  private final Lock lock;
+  private final ByteArrayWrapper key;
 
-  public AutoCloseableLock(Runnable unlockFunction) {
-    unlock = unlockFunction;
+  public AutoCloseableLock(ByteArrayWrapper key, Lock lock) {
+    this.key = key;
+    this.lock = lock;
   }
 
   @Override
   public void close() {
-    this.unlock.run();
+    lock.unlock();
   }
 }

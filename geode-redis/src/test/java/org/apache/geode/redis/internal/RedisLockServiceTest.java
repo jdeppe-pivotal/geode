@@ -16,10 +16,12 @@
 package org.apache.geode.redis.internal;
 
 
-import java.lang.ref.WeakReference;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
-import org.junit.Assert;
 import org.junit.Test;
+
+import org.apache.geode.cache.TimeoutException;
 
 /**
  * Test cases for the Redis lock service
@@ -38,7 +40,8 @@ public class RedisLockServiceTest {
     RedisLockService lockService = new RedisLockService(1000);
 
     // test null handling
-    Assert.assertFalse(lockService.lock(null));
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(() -> lockService.lock(null));
 
     ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[] {97, 98, 99});
     ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[] {97, 98, 99});
@@ -46,11 +49,11 @@ public class RedisLockServiceTest {
     // test locks across threads
     Thread t1 = new Thread(() -> {
       try {
-        lockService.lock(key1);
+        AutoCloseableLock autoLock = lockService.lock(key1);
 
         while (true) {
           if (RedisLockServiceTest.testLockBool) {
-            lockService.unlock(key1);
+            autoLock.close();
             break;
           }
 
@@ -68,20 +71,20 @@ public class RedisLockServiceTest {
     Thread.sleep(1000);
 
     // test current thread cannot lock the same key
-    Assert.assertFalse(lockService.lock(key1));
+    assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> lockService.lock(key1));
 
     // test current thread cannot lock the same (via equality) key
-    Assert.assertFalse(lockService.lock(key2));
+    assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> lockService.lock(key2));
 
     // set flag for thread to unlock key
     RedisLockServiceTest.testLockBool = true;
     t1.join();
 
     // assert true you can now lock the service
-    Assert.assertTrue(lockService.lock(key1));
-    Assert.assertTrue(lockService.lock(key2));
+    assertThat(lockService.lock(key1)).isNotNull();
+    assertThat(lockService.lock(key2)).isNotNull();
 
-    Assert.assertEquals(1, lockService.getMapSize());
+    assertThat(lockService.getMapSize()).isEqualTo(1);
     // TODO: clean this up - either remove or fix if we switch to some other backing structure in
     // RedisLockServiceTest
     // Object key2 = 123;
@@ -106,18 +109,16 @@ public class RedisLockServiceTest {
     RedisLockService lockService1 = new RedisLockService();
     RedisLockService lockService2 = new RedisLockService();
 
-    // check null handling
-    lockService1.unlock(null);
     ByteArrayWrapper key = new ByteArrayWrapper(new byte[] {2});
     // test locks across threads
     Thread t1 = new Thread(() -> {
 
       try {
-        lockService1.lock(new ByteArrayWrapper(new byte[] {2}));
+        AutoCloseableLock autoLock = lockService1.lock(new ByteArrayWrapper(new byte[] {2}));
 
         while (true) {
           if (RedisLockServiceTest.testUnlock) {
-            lockService1.unlock(new ByteArrayWrapper(new byte[] {2}));
+            autoLock.close();
             break;
           }
 
@@ -134,42 +135,40 @@ public class RedisLockServiceTest {
     t1.start();
     Thread.sleep(5);
 
-    Assert.assertFalse(lockService1.lock(key));
+    assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> lockService1.lock(key));
 
-    // test locks across services different
-    Assert.assertTrue(lockService2.lock(key));
-    lockService2.unlock(key);
+    // test locks across services are different
+    try (AutoCloseableLock lock = lockService2.lock(key)) {
+    } // implicit close
 
-    Assert.assertFalse(lockService1.lock(key));
+    assertThatExceptionOfType(TimeoutException.class).isThrownBy(() -> lockService1.lock(key));
 
     // set flag for thread to unlock
     RedisLockServiceTest.testUnlock = true;
     Thread.sleep(20);
 
-    Assert.assertTrue(lockService1.lock(key));
+    assertThat(lockService1.lock(key)).isNotNull();
     t1.join();
   }
 
   @Test
   public void testGetLock() throws InterruptedException {
     RedisLockService lockService = new RedisLockService();
-    WeakReference<Object> ref;
 
     ByteArrayWrapper obj = new ByteArrayWrapper(new byte[] {1});
-    ref = new WeakReference<>(obj);
 
-    lockService.lock(obj);
-    Assert.assertEquals(1, lockService.getMapSize());
+    AutoCloseableLock autoLock = lockService.lock(obj);
+    assertThat(lockService.getMapSize()).isEqualTo(1);
 
-    lockService.unlock(obj);
+    autoLock.close();
+    autoLock = null;
     obj = null;
 
     System.gc();
     System.runFinalization();
 
     // check lock removed
-    Assert.assertNull(ref.get());
-    Assert.assertEquals(0, lockService.getMapSize());
+    assertThat(lockService.getMapSize()).isEqualTo(0);
   }
 
   @Test
@@ -177,14 +176,14 @@ public class RedisLockServiceTest {
     RedisLockService lockService = new RedisLockService();
 
     ByteArrayWrapper obj1 = new ByteArrayWrapper(new byte[] {77});
-    lockService.lock(obj1);
+    AutoCloseableLock lock1 = lockService.lock(obj1);
 
-    Assert.assertEquals(1, lockService.getMapSize());
+    assertThat(lockService.getMapSize()).isEqualTo(1);
 
     ByteArrayWrapper obj2 = new ByteArrayWrapper(new byte[] {77});
     lockService.lock(obj2);
 
-    Assert.assertEquals(1, lockService.getMapSize());
+    assertThat(lockService.getMapSize()).isEqualTo(1);
 
     obj1 = null;
 
@@ -192,7 +191,7 @@ public class RedisLockServiceTest {
     System.runFinalization();
 
     // check lock removed
-    Assert.assertEquals(1, lockService.getMapSize());
+    assertThat(lockService.getMapSize()).isEqualTo(1);
   }
 
 }
