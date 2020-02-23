@@ -81,6 +81,7 @@ public class RedisLockServiceTest {
     Assert.assertTrue(lockService.lock(key1));
     Assert.assertTrue(lockService.lock(key2));
 
+    Assert.assertEquals(1, lockService.getMapSize());
     // TODO: clean this up - either remove or fix if we switch to some other backing structure in
     // RedisLockServiceTest
     // Object key2 = 123;
@@ -153,16 +154,15 @@ public class RedisLockServiceTest {
   public void testGetLock() throws InterruptedException {
     RedisLockService lockService = new RedisLockService();
     WeakReference<Object> ref;
-    {
-      ByteArrayWrapper obj = new ByteArrayWrapper(new byte[] {1});
-      ref = new WeakReference<>(obj);
 
-      lockService.lock(obj);
-      Assert.assertEquals(1, lockService.getMapSize());
+    ByteArrayWrapper obj = new ByteArrayWrapper(new byte[] {1});
+    ref = new WeakReference<>(obj);
 
-      lockService.unlock(obj);
-      obj = null; // even going out of scope doesn't kill it
-    }
+    lockService.lock(obj);
+    Assert.assertEquals(1, lockService.getMapSize());
+
+    lockService.unlock(obj);
+    obj = null;
 
     System.gc();
     System.runFinalization();
@@ -170,6 +170,29 @@ public class RedisLockServiceTest {
     // check lock removed
     Assert.assertNull(ref.get());
     Assert.assertEquals(0, lockService.getMapSize());
+  }
+
+  @Test
+  public void testGetLockTwice() throws InterruptedException {
+    RedisLockService lockService = new RedisLockService();
+
+    ByteArrayWrapper obj1 = new ByteArrayWrapper(new byte[] {77});
+    lockService.lock(obj1);
+
+    Assert.assertEquals(1, lockService.getMapSize());
+
+    ByteArrayWrapper obj2 = new ByteArrayWrapper(new byte[] {77});
+    lockService.lock(obj2);
+
+    Assert.assertEquals(1, lockService.getMapSize());
+
+    obj1 = null;
+
+    System.gc();
+    System.runFinalization();
+
+    // check lock removed
+    Assert.assertEquals(1, lockService.getMapSize());
   }
 
 }
