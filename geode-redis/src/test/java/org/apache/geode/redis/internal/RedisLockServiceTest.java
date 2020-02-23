@@ -107,17 +107,16 @@ public class RedisLockServiceTest {
 
     // check null handling
     lockService1.unlock(null);
-
-    Object key = new Integer(2);
+    ByteArrayWrapper key = new ByteArrayWrapper(new byte[] {2});
     // test locks across threads
     Thread t1 = new Thread(() -> {
 
       try {
-        lockService1.lock(Integer.valueOf(2));
+        lockService1.lock(new ByteArrayWrapper(new byte[] {2}));
 
         while (true) {
           if (RedisLockServiceTest.testUnlock) {
-            lockService1.unlock(Integer.valueOf(2));
+            lockService1.unlock(new ByteArrayWrapper(new byte[] {2}));
             break;
           }
 
@@ -155,7 +154,7 @@ public class RedisLockServiceTest {
     RedisLockService lockService = new RedisLockService();
     WeakReference<Object> ref;
     {
-      Object obj = new Object();
+      ByteArrayWrapper obj = new ByteArrayWrapper(new byte[] {1});
       ref = new WeakReference<>(obj);
 
       lockService.lock(obj);

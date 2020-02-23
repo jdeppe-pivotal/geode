@@ -68,7 +68,7 @@ public class ByteArrayWrapper implements DataSerializable, Comparable<ByteArrayW
 
   @Override
   public void fromData(DataInput in) throws IOException, ClassNotFoundException {
-    this.value = DataSerializer.readByteArray(in);;
+    this.value = DataSerializer.readByteArray(in);
     this.hashCode = Arrays.hashCode(this.value);
   }
 

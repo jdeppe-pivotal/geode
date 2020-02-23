@@ -31,8 +31,7 @@ public class RedisLockService {
 
   private static final int DEFAULT_TIMEOUT = 1000;
   private final int timeoutMS;
-  private Map<Object, Lock> map =
-      Collections.synchronizedMap(new WeakHashMap<>());
+  private Map<ByteArrayWrapper, Lock> map = Collections.synchronizedMap(new WeakHashMap<>());
 
   /**
    * Construct with the default 1000ms timeout setting
@@ -56,7 +55,7 @@ public class RedisLockService {
    * @param name the lock name/key
    * @return true if lock establish prior to timeout
    */
-  public boolean lock(Object name) throws InterruptedException {
+  public boolean lock(ByteArrayWrapper name) throws InterruptedException {
     if (name == null) {
       return false;
     }
