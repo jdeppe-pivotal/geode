@@ -63,35 +63,41 @@ public class SMoveExecutor extends SetExecutor {
       sourceSet = new HashSet<>(sourceSet); // copy to support transactions;
       boolean removed = sourceSet.remove(member);
 
-      Set<ByteArrayWrapper> destinationSet = region.get(destination);
-
-      if (destinationSet == null)
-        destinationSet = new HashSet<>();
-      else
-        destinationSet = new HashSet<>(destinationSet); // copy to support transactions
-
-      destinationSet.add(member);
-
-      region.put(destination, destinationSet);
-      context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
-
-      region.put(source, sourceSet);
-      context.getKeyRegistrar().register(source, RedisDataType.REDIS_SET);
-
       if (!removed) {
         command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_MOVED));
       } else {
+        Set<ByteArrayWrapper> destinationSet = region.get(destination);
+
+        if (destinationSet == null)
+          destinationSet = new HashSet<>();
+        else
+          destinationSet = new HashSet<>(destinationSet); // copy to support transactions
+
+        destinationSet.add(member);
+
+        region.put(destination, destinationSet);
+        context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
+
+        region.put(source, sourceSet);
+        context.getKeyRegistrar().register(source, RedisDataType.REDIS_SET);
+
         command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), MOVED));
       }
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      System.out.println("Interrupt exception!!");
       command.setResponse(
           Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
       return;
     } catch (TimeoutException e) {
+      System.out.println("Timeout exception!!");
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
           "Timeout acquiring lock. Please try again."));
       return;
+    } catch (Exception e) {
+      System.out.println("Unexpected exception: " + e);
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+          "Unexpected exception."));
     }
 
   }

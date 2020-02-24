@@ -19,6 +19,7 @@ import static org.apache.geode.distributed.ConfigurationProperties.LOG_LEVEL;
 import static org.apache.geode.distributed.ConfigurationProperties.MCAST_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
@@ -43,6 +44,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.exceptions.JedisDataException;
 
 import org.apache.geode.cache.CacheFactory;
 import org.apache.geode.cache.GemFireCache;
@@ -78,10 +80,7 @@ public class SetsJUnitTest {
     int elements = 10;
     Set<String> strings = new HashSet<String>();
     String key = generator.generate('x');
-    for (int i = 0; i < elements; i++) {
-      String elem = generator.generate('x');
-      strings.add(elem);
-    }
+    generateStrings(elements, strings, 'x');
     String[] stringArray = strings.toArray(new String[strings.size()]);
     Long response = jedis.sadd(key, stringArray);
     assertEquals(response, new Long(strings.size()));
@@ -92,7 +91,7 @@ public class SetsJUnitTest {
   }
 
   @Test
-  public void testConcurrentSAddScard() throws InterruptedException, ExecutionException {
+  public void testConcurrentSAddScard_sameKeyPerClient() throws InterruptedException, ExecutionException {
     int elements = 1000;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
     Set<String> strings1 = new HashSet<String>();
@@ -114,6 +113,32 @@ public class SetsJUnitTest {
     assertThat(future2.get()).isEqualTo(strings2.size());
 
     assertEquals(jedis.scard(key), new Long(strings1.size()+strings2.size()));
+
+    pool.shutdown();
+  }
+
+  @Test
+  public void testConcurrentSAddScard_differentKeyPerClient() throws InterruptedException, ExecutionException {
+    int elements = 1000;
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+    Set<String> strings = new HashSet<String>();
+    String key1 = generator.generate('x');
+    String key2 = generator.generate('y');
+    generateStrings(elements, strings, 'y');
+
+    String[] stringArray = strings.toArray(new String[strings.size()]);
+
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    Callable<Integer> callable1 = () -> doABunchOfSadds(key1, stringArray, jedis);
+    Callable<Integer> callable2 = () -> doABunchOfSadds(key2, stringArray, jedis2);
+    Future<Integer> future1 = pool.submit(callable1);
+    Future<Integer> future2 = pool.submit(callable2);
+
+    assertThat(future1.get()).isEqualTo(strings.size());
+    assertThat(future2.get()).isEqualTo(strings.size());
+
+    assertEquals(jedis.scard(key1), new Long(strings.size()));
+    assertEquals(jedis.scard(key2), new Long(strings.size()));
 
     pool.shutdown();
   }
@@ -140,7 +165,7 @@ public class SetsJUnitTest {
   }
 
   @Test
-  public void testSMembersIsMember() {
+  public void testSMembersSIsMember() {
     int elements = 10;
     Set<String> strings = new HashSet<String>();
     String key = generator.generate('x');
@@ -185,6 +210,50 @@ public class SetsJUnitTest {
     }
 
     assertTrue(jedis.smove(test, dest, generator.generate('x')) == 0);
+
+    jedis.sadd(source, stringArray);
+    String nonexistent = generator.generate('y');
+    assertTrue(jedis.smove(source, dest, nonexistent) == 0);
+    assertFalse(jedis.sismember(dest, nonexistent));
+  }
+
+  @Test
+  public void testConcurrentSMove() throws ExecutionException, InterruptedException {
+    String source = generator.generate('x');
+    String dest = generator.generate('y');
+    int elements = 1000;
+    Set<String> strings = new HashSet<String>();
+    generateStrings(elements, strings, 'x');
+    String[] stringArray = strings.toArray(new String[strings.size()]);
+    jedis.sadd(source, stringArray);
+
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    Callable<Long> callable1 = () -> moveSetElements(source, dest, strings);
+    Callable<Long> callable2 = () -> moveSetElements(source, dest, strings);
+    Future<Long> future1 = pool.submit(callable1);
+    Future<Long> future2 = pool.submit(callable2);
+
+    assertThat(future1.get() + future2.get()).isEqualTo(new Long(strings.size()));
+    assertThat(jedis.scard(dest)).isEqualTo(new Long(strings.size()));
+    assertThat(jedis.scard(source)).isEqualTo(0L);
+
+    pool.shutdown();
+  }
+
+  private long moveSetElements(String source, String dest, Set<String> strings) {
+    long results = 0;
+    for (String entry : strings) {
+      try {
+        if (jedis.sismember(source, entry)) {
+          results += jedis.smove(source, dest, entry);
+        }
+      } catch (JedisDataException e) {
+        System.out.println("Something bad happened!!!" + entry);
+        e.printStackTrace();
+      }
+      Thread.yield();
+    }
+    return results;
   }
 
   @Test
@@ -290,77 +359,6 @@ public class SetsJUnitTest {
     Set<String> destResult = jedis.smembers(destination);
 
     assertEquals(result, destResult);
-  }
-
-  @Test
-  public void testConcurrentSadd() throws InterruptedException {
-    Jedis jedis2 = new Jedis("localhost", port, 10000000);
-    String key = generator.generate('x');
-
-    Runnable runnable1 = () -> doABunchOfSadds(jedis, key, 1);
-    Runnable runnable2 = () -> doABunchOfSadds(jedis2, key, 2);
-    Thread thread1 = new Thread(runnable1);
-    Thread thread2 = new Thread(runnable2);
-
-    thread1.start();
-    thread2.start();
-    thread1.join();
-    thread2.join();
-
-    assertThat(jedis.scard(key)).isEqualTo(ITERATIONS * 2);
-  }
-
-  @Test
-  public void testConcurrentSmove() throws InterruptedException {
-    Jedis jedis2 = new Jedis("localhost", port, 10000000);
-    String source = generator.generate('x');
-    String destination = generator.generate('x');
-
-    List<String> fields = new ArrayList<>();
-    for (int i = 0; i < ITERATIONS; i++) {
-      String field = "value-" + i;
-      jedis.sadd(source, field);
-      fields.add(field);
-    }
-
-    Collections.shuffle(fields);
-    BlockingQueue shuffledFields = new ArrayBlockingQueue(ITERATIONS, true, fields);
-
-    Runnable runnable1 = () -> doABunchOfSMoves(jedis, source, destination, shuffledFields);
-    Runnable runnable2 = () -> doABunchOfSMoves(jedis2, source, destination, shuffledFields);
-    Thread thread1 = new Thread(runnable1);
-    Thread thread2 = new Thread(runnable2);
-
-    thread1.start();
-    thread2.start();
-    thread1.join();
-    thread2.join();
-
-    assertThat(jedis.scard(source)).isEqualTo(0);
-    assertThat(jedis.scard(destination)).isEqualTo(ITERATIONS);
-  }
-
-  private void doABunchOfSMoves(Jedis client, String source, String destination,
-      BlockingQueue<String> shuffledFields) {
-    String member;
-    while (true) {
-      try {
-        member = shuffledFields.poll(100, TimeUnit.MILLISECONDS);
-        if (member == null) {
-          return;
-        }
-      } catch (InterruptedException e) {
-        return;
-      }
-
-      client.smove(source, destination, member);
-    }
-  }
-
-  private void doABunchOfSadds(Jedis client, String key, int index) {
-    for (int i = 0; i < ITERATIONS; i++) {
-      client.sadd(key, String.format("value-%d-%d", index, i));
-    }
   }
 
   @After
