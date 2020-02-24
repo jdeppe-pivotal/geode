@@ -29,6 +29,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
@@ -79,8 +85,58 @@ public class SetsJUnitTest {
     String[] stringArray = strings.toArray(new String[strings.size()]);
     Long response = jedis.sadd(key, stringArray);
     assertEquals(response, new Long(strings.size()));
+    Long response2 = jedis.sadd(key, stringArray);
+    assertThat(response2).isEqualTo(0L);
 
     assertEquals(jedis.scard(key), new Long(strings.size()));
+  }
+
+  @Test
+  public void testConcurrentSAddScard() throws InterruptedException, ExecutionException {
+    int elements = 1000;
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+    Set<String> strings1 = new HashSet<String>();
+    Set<String> strings2 = new HashSet<String>();
+    String key = generator.generate('x');
+    generateStrings(elements, strings1, 'y');
+    generateStrings(elements, strings2, 'z');
+
+    String[] stringArray1 = strings1.toArray(new String[strings1.size()]);
+    String[] stringArray2 = strings2.toArray(new String[strings2.size()]);
+
+    ExecutorService pool = Executors.newFixedThreadPool(2);
+    Callable<Integer> callable1 = () -> doABunchOfSadds(key, stringArray1, jedis);
+    Callable<Integer> callable2 = () -> doABunchOfSadds(key, stringArray2, jedis2);
+    Future<Integer> future1 = pool.submit(callable1);
+    Future<Integer> future2 = pool.submit(callable2);
+
+    assertThat(future1.get()).isEqualTo(strings1.size());
+    assertThat(future2.get()).isEqualTo(strings2.size());
+
+    assertEquals(jedis.scard(key), new Long(strings1.size()+strings2.size()));
+
+    pool.shutdown();
+  }
+
+  private void generateStrings(int elements, Set<String> strings, char separator) {
+    for (int i = 0; i < elements; i++) {
+      String elem = generator.generate(separator);
+      strings.add(elem);
+    }
+  }
+
+  private int doABunchOfSadds(String key, String[] strings,
+                                Jedis jedis) {
+    int successes = 0;
+
+    for (int i = 0; i < strings.length; i++) {
+      Long reply = jedis.sadd(key,strings[i]);
+      if (reply == 1L) {
+        successes++;
+        Thread.yield();
+      }
+    }
+    return successes;
   }
 
   @Test
@@ -112,10 +168,7 @@ public class SetsJUnitTest {
     String test = generator.generate('x');
     int elements = 10;
     Set<String> strings = new HashSet<String>();
-    for (int i = 0; i < elements; i++) {
-      String elem = generator.generate('x');
-      strings.add(elem);
-    }
+    generateStrings(elements, strings, 'x');
     String[] stringArray = strings.toArray(new String[strings.size()]);
     jedis.sadd(source, stringArray);
 

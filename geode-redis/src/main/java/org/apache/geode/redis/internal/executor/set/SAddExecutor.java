@@ -34,6 +34,8 @@ public class SAddExecutor extends SetExecutor {
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
 
+    Long entriesAdded = 0L;
+
     if (commandElems.size() < 3) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SADD));
       return;
@@ -44,23 +46,19 @@ public class SAddExecutor extends SetExecutor {
       Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = getRegion(context);
 
       Set<ByteArrayWrapper> entries = region.get(key);
-      if (entries == null)
+      if (entries == null) {
         entries = new HashSet<ByteArrayWrapper>();
-
-      if (commandElems.size() >= 4) {
-        for (int i = 2; i < commandElems.size(); i++)
-          entries.add(new ByteArrayWrapper(commandElems.get(i)));
-
-        region.put(key, entries);
-        command
-            .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), entries.size()));
-      } else {
-        Object v = entries.add(new ByteArrayWrapper(commandElems.get(2)));
-        region.put(key, entries);
-
-        command.setResponse(
-            Coder.getIntegerResponse(context.getByteBufAllocator(), v == null ? 1 : 0));
       }
+
+      for (int i = 2; i < commandElems.size(); i++) {
+        if (entries.add(new ByteArrayWrapper(commandElems.get(i)))) {
+          entriesAdded++;
+        }
+      }
+
+      region.put(key, entries);
+      command
+          .setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), entriesAdded));
 
       // Save key
       context.getKeyRegistrar().register(command.getKey(), RedisDataType.REDIS_SET);
