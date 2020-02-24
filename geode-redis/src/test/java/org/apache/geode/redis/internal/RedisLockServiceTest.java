@@ -181,11 +181,12 @@ public class RedisLockServiceTest {
     assertThat(lockService.getMapSize()).isEqualTo(1);
 
     ByteArrayWrapper obj2 = new ByteArrayWrapper(new byte[] {77});
-    lockService.lock(obj2);
+    AutoCloseableLock lock2 = lockService.lock(obj2);
 
     assertThat(lockService.getMapSize()).isEqualTo(1);
 
     obj1 = null;
+    lock1 = null;
 
     System.gc();
     System.runFinalization();

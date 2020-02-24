@@ -66,6 +66,14 @@ public class RedisLockService {
     Lock oldLock = map.putIfAbsent(key, lock);
     if (oldLock != null) {
       lock = oldLock;
+      // we need to get a reference to the actual key object so that the backing WeakHashMap does
+      // not clean it up.
+      for (ByteArrayWrapper keyInSet : map.keySet()) {
+        if (keyInSet.equals(key)) {
+          key = keyInSet;
+          break;
+        }
+      }
     }
 
     if (!lock.tryLock(timeoutMS, TimeUnit.MILLISECONDS)) {
