@@ -14,6 +14,7 @@
  */
 package org.apache.geode.redis.internal.executor.set;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -32,9 +33,10 @@ public class SDiffExecutor extends SetOpExecutor {
       List<Set<ByteArrayWrapper>> setList) {
     if (firstSet == null)
       return null;
+    Set<ByteArrayWrapper> copy = new HashSet<>(firstSet);
     for (Set<ByteArrayWrapper> set : setList)
-      firstSet.removeAll(set);
-    return firstSet;
+      copy.removeAll(set);
+    return copy;
   }
 
   @Override

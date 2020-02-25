@@ -284,6 +284,83 @@ public class SetsJUnitTest {
   }
 
   @Test
+  public void actuallyTestSDiff() {
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
+    jedis.sadd("set1", firstSet);
+    jedis.sadd("set2", secondSet);
+    jedis.sadd("set3", thirdSet);
+
+    Set<String> result = jedis.sdiff("set1", "set2", "set3", "doesNotExist");
+    String[] expected = new String[]{"pear", "plum", "orange"};
+    assertThat(result).containsExactlyInAnyOrder(expected);
+
+    Set<String> shouldNotChange = jedis.smembers("set1");
+    assertThat(shouldNotChange).containsExactlyInAnyOrder(firstSet);
+
+    Set<String> shouldBeEmpty = jedis.sdiff("doesNotExist", "set1", "set2", "set3");
+    assertThat(shouldBeEmpty).isEmpty();
+  }
+
+  @Test
+  public void actuallyTestSDiffStore() {
+    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[]{"apple", "microsoft", "linux"};
+    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
+    jedis.sadd("set1", firstSet);
+    jedis.sadd("set2", secondSet);
+    jedis.sadd("set3", thirdSet);
+
+    Long resultSize = jedis.sdiffstore("result", "set1", "set2", "set3");
+    Set<String> resultSet = jedis.smembers("result");
+
+    String[] expected = new String[]{"pear", "plum", "orange"};
+    assertThat(resultSize).isEqualTo(expected.length);
+    assertThat(resultSet).containsExactlyInAnyOrder(expected);
+
+    Long otherResultSize = jedis.sdiffstore("set1", "set1", "result");
+    Set<String> otherResultSet = jedis.smembers("set1");
+    String[] otherExpected = new String[]{"apple", "peach"};
+    assertThat(otherResultSize).isEqualTo(otherExpected.length);
+    assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
+
+    Long emptySetSize = jedis.sdiffstore("newEmpty", "nonexistent", "set2", "set3");
+    Set<String> emptyResultSet = jedis.smembers("newEmpty");
+    assertThat(emptySetSize).isEqualTo(0L);
+    assertThat(emptyResultSet).isEmpty();
+
+    emptySetSize = jedis.sdiffstore("set1", "nonexistent", "set2", "set3");
+    emptyResultSet = jedis.smembers("set1");
+    assertThat(emptySetSize).isEqualTo(0L);
+    assertThat(emptyResultSet).isEmpty();
+  }
+
+  @Test
+  public void testConcurrentSDiffStore() {
+    // set up array of sets to subtract
+//    Set[100] setArray = createSets();
+
+    // set up set to subtract from
+//    Set masterSet;
+//
+//    masterSet.add(UniqueStuff);
+//    masterSet.add(setArray);
+
+    // Fire off threads to do subtraction
+    // thread 1 does 1-10
+    // thread 2 does 11-20
+    // ...
+
+    // thread X also does 1-30
+
+    // wait for operations to finish
+
+    // confirm expected result
+//    assertThat(masterSet).containsExactlyInAnyOrder(UniqueStuff);
+  }
+
+  @Test
   public void testSUnionAndStore() {
     int numSets = 3;
     int elements = 10;

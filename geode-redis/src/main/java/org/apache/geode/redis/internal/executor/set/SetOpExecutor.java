@@ -38,7 +38,7 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), getArgsError()));
       return;
     }
-    RegionProvider rC = context.getRegionProvider();
+    RegionProvider regionProvider = context.getRegionProvider();
     ByteArrayWrapper destination = null;
     if (isStorage())
       destination = command.getKey();
@@ -75,8 +75,8 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
     Set<ByteArrayWrapper> resultSet = setOp(firstSet, setList);
     if (isStorage()) {
       Set<ByteArrayWrapper> newSet = null; // (Region<ByteArrayWrapper, Boolean>)
-                                           // rC.getRegion(destination);
-      rC.removeKey(destination);
+                                           // regionProvider.getRegion(destination);
+      regionProvider.removeKey(destination);
       if (resultSet != null) {
         Set<ByteArrayWrapper> set = new HashSet<ByteArrayWrapper>();
         for (ByteArrayWrapper entry : resultSet)
