@@ -104,7 +104,7 @@ public class ExecutionHandlerContext extends ChannelInboundHandlerAdapter {
    */
   public ExecutionHandlerContext(Channel ch, Cache cache, RegionProvider regionProvider,
       GeodeRedisServer server, byte[] pwd, KeyRegistrar keyRegistrar, PubSub pubSub,
-                                 RedisLockService hashLockService, RedisLockService setLockService) {
+      RedisLockService hashLockService, RedisLockService setLockService) {
     this.keyRegistrar = keyRegistrar;
     this.hashLockService = hashLockService;
     this.setLockService = setLockService;

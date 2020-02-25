@@ -38,7 +38,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.exceptions.JedisDataException;
 
 import org.apache.geode.cache.CacheFactory;
 import org.apache.geode.cache.GemFireCache;
@@ -148,7 +147,7 @@ public class SetsJUnitTest {
   }
 
   private int doABunchOfSadds(String key, String[] strings,
-                              Jedis jedis) {
+      Jedis jedis) {
     int successes = 0;
 
     for (int i = 0; i < strings.length; i++) {
@@ -237,7 +236,7 @@ public class SetsJUnitTest {
   }
 
   private long moveSetElements(String source, String dest, Set<String> strings,
-                               Jedis jedis) {
+      Jedis jedis) {
     long results = 0;
     for (String entry : strings) {
       results += jedis.smove(source, dest, entry);
@@ -285,15 +284,15 @@ public class SetsJUnitTest {
 
   @Test
   public void actuallyTestSDiff() {
-    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[]{"apple", "microsoft", "linux"};
-    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[] {"apple", "microsoft", "linux"};
+    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
 
     Set<String> result = jedis.sdiff("set1", "set2", "set3", "doesNotExist");
-    String[] expected = new String[]{"pear", "plum", "orange"};
+    String[] expected = new String[] {"pear", "plum", "orange"};
     assertThat(result).containsExactlyInAnyOrder(expected);
 
     Set<String> shouldNotChange = jedis.smembers("set1");
@@ -305,9 +304,9 @@ public class SetsJUnitTest {
 
   @Test
   public void actuallyTestSDiffStore() {
-    String[] firstSet = new String[]{"pear", "apple", "plum", "orange", "peach"};
-    String[] secondSet = new String[]{"apple", "microsoft", "linux"};
-    String[] thirdSet = new String[]{"luigi", "bowser", "peach", "mario"};
+    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[] {"apple", "microsoft", "linux"};
+    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
     jedis.sadd("set1", firstSet);
     jedis.sadd("set2", secondSet);
     jedis.sadd("set3", thirdSet);
@@ -315,13 +314,13 @@ public class SetsJUnitTest {
     Long resultSize = jedis.sdiffstore("result", "set1", "set2", "set3");
     Set<String> resultSet = jedis.smembers("result");
 
-    String[] expected = new String[]{"pear", "plum", "orange"};
+    String[] expected = new String[] {"pear", "plum", "orange"};
     assertThat(resultSize).isEqualTo(expected.length);
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Long otherResultSize = jedis.sdiffstore("set1", "set1", "result");
     Set<String> otherResultSet = jedis.smembers("set1");
-    String[] otherExpected = new String[]{"apple", "peach"};
+    String[] otherExpected = new String[] {"apple", "peach"};
     assertThat(otherResultSize).isEqualTo(otherExpected.length);
     assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
 
@@ -339,13 +338,13 @@ public class SetsJUnitTest {
   @Test
   public void testConcurrentSDiffStore() {
     // set up array of sets to subtract
-//    Set[100] setArray = createSets();
+    // Set[100] setArray = createSets();
 
     // set up set to subtract from
-//    Set masterSet;
-//
-//    masterSet.add(UniqueStuff);
-//    masterSet.add(setArray);
+    // Set masterSet;
+    //
+    // masterSet.add(UniqueStuff);
+    // masterSet.add(setArray);
 
     // Fire off threads to do subtraction
     // thread 1 does 1-10
@@ -357,7 +356,7 @@ public class SetsJUnitTest {
     // wait for operations to finish
 
     // confirm expected result
-//    assertThat(masterSet).containsExactlyInAnyOrder(UniqueStuff);
+    // assertThat(masterSet).containsExactlyInAnyOrder(UniqueStuff);
   }
 
   @Test

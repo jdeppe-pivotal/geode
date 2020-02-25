@@ -28,8 +28,6 @@ import org.apache.geode.redis.GeodeRedisServer;
 
 /**
  * Test cases for ExecutionHandlerContext
- *
- *
  */
 public class ExecutionHandlerContextTest {
   /**
@@ -51,16 +49,17 @@ public class ExecutionHandlerContextTest {
     RedisCommandType redisCommandType = Mockito.mock(RedisCommandType.class);
     KeyRegistrar keyRegistrar = Mockito.mock(KeyRegistrar.class);
     PubSub pubSub = Mockito.mock(PubSub.class);
+    RedisLockService lockService = Mockito.mock(RedisLockService.class);
 
     Mockito.when(cache.getLogger()).thenReturn(logWriter);
     Mockito.when(ch.pipeline()).thenReturn(channelPipeline);
     Mockito.when(channelPipeline.lastContext()).thenReturn(channelHandlerContext);
     Mockito.when(channelHandlerContext.executor()).thenReturn(eventExecutor);
 
-
     byte[] pwd = null;
     ExecutionHandlerContext handler =
-        new ExecutionHandlerContext(ch, cache, regionProvider, server, pwd, keyRegistrar, pubSub);
+        new ExecutionHandlerContext(ch, cache, regionProvider, server, pwd, keyRegistrar, pubSub,
+            lockService, lockService);
 
     Mockito.when(msg.getCommandType()).thenReturn(redisCommandType);
     Executor exec = Mockito.mock(Executor.class);
