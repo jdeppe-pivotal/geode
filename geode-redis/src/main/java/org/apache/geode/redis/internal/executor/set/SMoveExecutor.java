@@ -68,10 +68,11 @@ public class SMoveExecutor extends SetExecutor {
       } else {
         Set<ByteArrayWrapper> destinationSet = region.get(destination);
 
-        if (destinationSet == null)
+        if (destinationSet == null) {
           destinationSet = new HashSet<>();
-        else
+        } else {
           destinationSet = new HashSet<>(destinationSet); // copy to support transactions
+        }
 
         destinationSet.add(member);
 

@@ -24,19 +24,13 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -48,7 +42,6 @@ import redis.clients.jedis.exceptions.JedisDataException;
 
 import org.apache.geode.cache.CacheFactory;
 import org.apache.geode.cache.GemFireCache;
-import org.apache.geode.internal.AvailablePortHelper;
 import org.apache.geode.management.internal.cli.util.ThreePhraseGenerator;
 import org.apache.geode.test.junit.categories.RedisTest;
 
@@ -68,7 +61,7 @@ public class SetsJUnitTest {
     cf.set(MCAST_PORT, "0");
     cf.set(LOCATORS, "");
     cache = cf.create();
-    port = AvailablePortHelper.getRandomAvailableTCPPort();
+    // port = AvailablePortHelper.getRandomAvailableTCPPort();
     server = new GeodeRedisServer("localhost", port);
 
     server.start();
@@ -82,8 +75,10 @@ public class SetsJUnitTest {
     String key = generator.generate('x');
     generateStrings(elements, strings, 'x');
     String[] stringArray = strings.toArray(new String[strings.size()]);
+
     Long response = jedis.sadd(key, stringArray);
     assertEquals(response, new Long(strings.size()));
+
     Long response2 = jedis.sadd(key, stringArray);
     assertThat(response2).isEqualTo(0L);
 
@@ -221,7 +216,7 @@ public class SetsJUnitTest {
   public void testConcurrentSMove() throws ExecutionException, InterruptedException {
     String source = generator.generate('x');
     String dest = generator.generate('y');
-    int elements = 1000;
+    int elements = 50;
     Set<String> strings = new HashSet<String>();
     generateStrings(elements, strings, 'x');
     String[] stringArray = strings.toArray(new String[strings.size()]);
@@ -233,19 +228,23 @@ public class SetsJUnitTest {
     Future<Long> future1 = pool.submit(callable1);
     Future<Long> future2 = pool.submit(callable2);
 
-    assertThat(future1.get() + future2.get()).isEqualTo(new Long(strings.size()));
-    assertThat(jedis.scard(dest)).isEqualTo(new Long(strings.size()));
-    assertThat(jedis.scard(source)).isEqualTo(0L);
+    future1.get();
+    future2.get();
 
-    pool.shutdown();
+    assertThat(jedis.smembers(dest).toArray()).containsExactlyInAnyOrder(strings.toArray());
+
+    // assertThat(future1.get() + future2.get()).isEqualTo(new Long(strings.size()));
+    // assertThat(jedis.scard(dest)).isEqualTo(new Long(strings.size()));
+    // assertThat(jedis.scard(source)).isEqualTo(0L);
   }
 
   private long moveSetElements(String source, String dest, Set<String> strings) {
     long results = 0;
     for (String entry : strings) {
       try {
-        if (jedis.sismember(source, entry)) {
-          results += jedis.smove(source, dest, entry);
+        if (jedis.smove(source, dest, entry) == 1) {
+        	results++;
+          assertThat(jedis.sismember(dest, entry)).as("Entry " + entry + " failed to smove").isTrue();
         }
       } catch (JedisDataException e) {
         System.out.println("Something bad happened!!!" + entry);
@@ -253,6 +252,7 @@ public class SetsJUnitTest {
       }
       Thread.yield();
     }
+    System.err.println("!!!!!! Done with SMOVEing");
     return results;
   }
 
