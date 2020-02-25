@@ -38,7 +38,7 @@ public class RedisLockService {
   /**
    * Construct with the default 1000ms timeout setting
    */
-  RedisLockService() {
+  public RedisLockService() {
     this(DEFAULT_TIMEOUT);
   }
 
@@ -47,7 +47,7 @@ public class RedisLockService {
    *
    * @param timeoutMS the default timeout to wait for lock
    */
-  RedisLockService(int timeoutMS) {
+  public RedisLockService(int timeoutMS) {
     this.timeoutMS = timeoutMS;
   }
 

@@ -86,7 +86,8 @@ public class SetsJUnitTest {
   }
 
   @Test
-  public void testConcurrentSAddScard_sameKeyPerClient() throws InterruptedException, ExecutionException {
+  public void testConcurrentSAddScard_sameKeyPerClient()
+      throws InterruptedException, ExecutionException {
     int elements = 1000;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
     Set<String> strings1 = new HashSet<String>();
@@ -107,13 +108,14 @@ public class SetsJUnitTest {
     assertThat(future1.get()).isEqualTo(strings1.size());
     assertThat(future2.get()).isEqualTo(strings2.size());
 
-    assertEquals(jedis.scard(key), new Long(strings1.size()+strings2.size()));
+    assertEquals(jedis.scard(key), new Long(strings1.size() + strings2.size()));
 
     pool.shutdown();
   }
 
   @Test
-  public void testConcurrentSAddScard_differentKeyPerClient() throws InterruptedException, ExecutionException {
+  public void testConcurrentSAddScard_differentKeyPerClient()
+      throws InterruptedException, ExecutionException {
     int elements = 1000;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
     Set<String> strings = new HashSet<String>();
@@ -146,11 +148,11 @@ public class SetsJUnitTest {
   }
 
   private int doABunchOfSadds(String key, String[] strings,
-                                Jedis jedis) {
+                              Jedis jedis) {
     int successes = 0;
 
     for (int i = 0; i < strings.length; i++) {
-      Long reply = jedis.sadd(key,strings[i]);
+      Long reply = jedis.sadd(key, strings[i]);
       if (reply == 1L) {
         successes++;
         Thread.yield();
@@ -216,43 +218,31 @@ public class SetsJUnitTest {
   public void testConcurrentSMove() throws ExecutionException, InterruptedException {
     String source = generator.generate('x');
     String dest = generator.generate('y');
-    int elements = 50;
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+    int elements = 1000;
     Set<String> strings = new HashSet<String>();
     generateStrings(elements, strings, 'x');
     String[] stringArray = strings.toArray(new String[strings.size()]);
     jedis.sadd(source, stringArray);
 
     ExecutorService pool = Executors.newFixedThreadPool(2);
-    Callable<Long> callable1 = () -> moveSetElements(source, dest, strings);
-    Callable<Long> callable2 = () -> moveSetElements(source, dest, strings);
+    Callable<Long> callable1 = () -> moveSetElements(source, dest, strings, jedis);
+    Callable<Long> callable2 = () -> moveSetElements(source, dest, strings, jedis2);
     Future<Long> future1 = pool.submit(callable1);
     Future<Long> future2 = pool.submit(callable2);
 
-    future1.get();
-    future2.get();
-
+    assertThat(future1.get() + future2.get()).isEqualTo(new Long(strings.size()));
     assertThat(jedis.smembers(dest).toArray()).containsExactlyInAnyOrder(strings.toArray());
-
-    // assertThat(future1.get() + future2.get()).isEqualTo(new Long(strings.size()));
-    // assertThat(jedis.scard(dest)).isEqualTo(new Long(strings.size()));
-    // assertThat(jedis.scard(source)).isEqualTo(0L);
+    assertThat(jedis.scard(source)).isEqualTo(0L);
   }
 
-  private long moveSetElements(String source, String dest, Set<String> strings) {
+  private long moveSetElements(String source, String dest, Set<String> strings,
+                               Jedis jedis) {
     long results = 0;
     for (String entry : strings) {
-      try {
-        if (jedis.smove(source, dest, entry) == 1) {
-        	results++;
-          assertThat(jedis.sismember(dest, entry)).as("Entry " + entry + " failed to smove").isTrue();
-        }
-      } catch (JedisDataException e) {
-        System.out.println("Something bad happened!!!" + entry);
-        e.printStackTrace();
-      }
+      results += jedis.smove(source, dest, entry);
       Thread.yield();
     }
-    System.err.println("!!!!!! Done with SMOVEing");
     return results;
   }
 
@@ -265,8 +255,9 @@ public class SetsJUnitTest {
     for (int j = 0; j < numSets; j++) {
       keys[j] = generator.generate('x');
       Set<String> newSet = new HashSet<String>();
-      for (int i = 0; i < elements; i++)
+      for (int i = 0; i < elements; i++) {
         newSet.add(generator.generate('x'));
+      }
       sets.add(newSet);
     }
 
@@ -277,8 +268,9 @@ public class SetsJUnitTest {
     }
 
     Set<String> result = sets.get(0);
-    for (int i = 1; i < numSets; i++)
+    for (int i = 1; i < numSets; i++) {
       result.removeAll(sets.get(i));
+    }
 
     assertEquals(result, jedis.sdiff(keys));
 
@@ -300,8 +292,9 @@ public class SetsJUnitTest {
     for (int j = 0; j < numSets; j++) {
       keys[j] = generator.generate('x');
       Set<String> newSet = new HashSet<String>();
-      for (int i = 0; i < elements; i++)
+      for (int i = 0; i < elements; i++) {
         newSet.add(generator.generate('x'));
+      }
       sets.add(newSet);
     }
 
@@ -312,8 +305,9 @@ public class SetsJUnitTest {
     }
 
     Set<String> result = sets.get(0);
-    for (int i = 1; i < numSets; i++)
+    for (int i = 1; i < numSets; i++) {
       result.addAll(sets.get(i));
+    }
 
     assertEquals(result, jedis.sunion(keys));
 
@@ -335,8 +329,9 @@ public class SetsJUnitTest {
     for (int j = 0; j < numSets; j++) {
       keys[j] = generator.generate('x');
       Set<String> newSet = new HashSet<String>();
-      for (int i = 0; i < elements; i++)
+      for (int i = 0; i < elements; i++) {
         newSet.add(generator.generate('x'));
+      }
       sets.add(newSet);
     }
 
@@ -347,8 +342,9 @@ public class SetsJUnitTest {
     }
 
     Set<String> result = sets.get(0);
-    for (int i = 1; i < numSets; i++)
+    for (int i = 1; i < numSets; i++) {
       result.retainAll(sets.get(i));
+    }
 
     assertEquals(result, jedis.sinter(keys));
 

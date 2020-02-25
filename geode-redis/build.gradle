@@ -35,6 +35,7 @@ dependencies {
 
   integrationTestCompile('redis.clients:jedis')
   integrationTestCompile(project(':geode-junit'))
+  integrationTestRuntime(project(':geode-log4j'))
 
   distributedTestCompile(project(':geode-dunit'))
   distributedTestCompile('redis.clients:jedis')

@@ -76,6 +76,7 @@ import org.apache.geode.redis.internal.KeyRegistrar;
 import org.apache.geode.redis.internal.PubSub;
 import org.apache.geode.redis.internal.PubSubImpl;
 import org.apache.geode.redis.internal.RedisDataType;
+import org.apache.geode.redis.internal.RedisLockService;
 import org.apache.geode.redis.internal.RegionProvider;
 import org.apache.geode.redis.internal.Subscriptions;
 
@@ -278,6 +279,8 @@ public class GeodeRedisServer {
   private boolean started;
   private KeyRegistrar keyRegistrar;
   private PubSub pubSub;
+  private RedisLockService hashLockService;
+  private RedisLockService setLockService;
 
   /**
    * Determine the {@link RegionShortcut} type from a String value. If the String value doesn't map
@@ -481,6 +484,8 @@ public class GeodeRedisServer {
         throw assErr;
       }
       this.keyRegistrar = new KeyRegistrar(redisMetaData);
+      this.hashLockService = new RedisLockService();
+      this.setLockService = new RedisLockService();
       this.pubSub = new PubSubImpl(new Subscriptions());
       this.regionCache = new RegionProvider(stringsRegion, hLLRegion, this.keyRegistrar,
           expirationFutures, expirationExecutor, this.DEFAULT_REGION_TYPE, redisHash, redisSet);
@@ -569,7 +574,7 @@ public class GeodeRedisServer {
             p.addLast(ByteToCommandDecoder.class.getSimpleName(), new ByteToCommandDecoder());
             p.addLast(ExecutionHandlerContext.class.getSimpleName(),
                 new ExecutionHandlerContext(ch, cache, regionCache, GeodeRedisServer.this, pwdB,
-                    keyRegistrar, pubSub));
+                    keyRegistrar, pubSub, hashLockService, setLockService));
           }
         }).option(ChannelOption.SO_REUSEADDR, true).option(ChannelOption.SO_RCVBUF, getBufferSize())
         .childOption(ChannelOption.SO_KEEPALIVE, true)

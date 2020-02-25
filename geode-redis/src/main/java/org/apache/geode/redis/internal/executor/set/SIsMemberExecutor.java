@@ -42,8 +42,6 @@ public class SIsMemberExecutor extends SetExecutor {
       return;
     }
 
-    RegionProvider regionProvider = context.getRegionProvider();
-
     // check by meta data key
     // SISMEMBER companies ea64fe8c-e0a0-4439-a05d-d0738dd5ef80
     ByteArrayWrapper key = command.getKey();
@@ -69,8 +67,5 @@ public class SIsMemberExecutor extends SetExecutor {
       context.getKeyRegistrar().register(key, RedisDataType.REDIS_SET);
     } else
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));
-
-
   }
-
 }
