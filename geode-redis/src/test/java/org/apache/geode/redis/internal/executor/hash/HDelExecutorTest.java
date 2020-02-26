@@ -36,7 +36,6 @@ public class HDelExecutorTest {
     Command command = Mockito.mock(Command.class);
     ExecutionHandlerContext context = Mockito.mock(ExecutionHandlerContext.class);
 
-
     UnpooledByteBufAllocator byteBuf = new UnpooledByteBufAllocator(false);
     Mockito.when(context.getByteBufAllocator()).thenReturn(byteBuf);
 

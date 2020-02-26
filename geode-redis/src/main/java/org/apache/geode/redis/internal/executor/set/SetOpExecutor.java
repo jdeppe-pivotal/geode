@@ -51,31 +51,23 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
     ByteArrayWrapper firstSetKey = new ByteArrayWrapper(commandElems.get(setsStartIndex++));
     if (destination != null) {
       try (AutoCloseableLock regionLock = withRegionLock(context, destination)) {
-        if (DoActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
-            destination,
-            firstSetKey)) {
-          return;
-        }
+        doActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
+            destination, firstSetKey);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         command.setResponse(
             Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
-        return;
       } catch (TimeoutException e) {
         command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
             "Timeout acquiring lock. Please try again."));
-        return;
       }
     } else {
-      if (DoActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
-          destination,
-          firstSetKey)) {
-        return;
-      }
+      doActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
+          destination, firstSetKey);
     }
   }
 
-  private boolean DoActualSetOperation(Command command, ExecutionHandlerContext context,
+  private boolean doActualSetOperation(Command command, ExecutionHandlerContext context,
                                        List<byte[]> commandElems, int setsStartIndex,
                                        RegionProvider regionProvider, ByteArrayWrapper destination,
                                        ByteArrayWrapper firstSetKey) {
@@ -93,20 +85,15 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
         setList.add(new HashSet<>());
       }
     }
-    if (setList.isEmpty()) {
-      if (isStorage()) {
-        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), 0));
-        context.getRegionProvider().removeKey(destination);
-      } else {
-        respondBulkStrings(command, context, firstSet);
-      }
+
+    if (setList.isEmpty() && !isStorage()) {
+      respondBulkStrings(command, context, firstSet);
       return true;
     }
 
     Set<ByteArrayWrapper> resultSet = setOp(firstSet, setList);
     if (isStorage()) {
-      Set<ByteArrayWrapper> newSet = null; // (Region<ByteArrayWrapper, Boolean>)
-      // regionProvider.getRegion(destination);
+      Set<ByteArrayWrapper> newSet = null;
       regionProvider.removeKey(destination);
       if (resultSet != null) {
         Set<ByteArrayWrapper> set = new HashSet<>();

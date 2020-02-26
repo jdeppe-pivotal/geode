@@ -248,44 +248,7 @@ public class SetsJUnitTest {
   }
 
   @Test
-  public void testSDiffAndStore() {
-    int numSets = 3;
-    int elements = 10;
-    String[] keys = new String[numSets];
-    ArrayList<Set<String>> sets = new ArrayList<Set<String>>();
-    for (int j = 0; j < numSets; j++) {
-      keys[j] = generator.generate('x');
-      Set<String> newSet = new HashSet<String>();
-      for (int i = 0; i < elements; i++) {
-        newSet.add(generator.generate('x'));
-      }
-      sets.add(newSet);
-    }
-
-    for (int i = 0; i < numSets; i++) {
-      Set<String> s = sets.get(i);
-      String[] stringArray = s.toArray(new String[s.size()]);
-      jedis.sadd(keys[i], stringArray);
-    }
-
-    Set<String> result = sets.get(0);
-    for (int i = 1; i < numSets; i++) {
-      result.removeAll(sets.get(i));
-    }
-
-    assertEquals(result, jedis.sdiff(keys));
-
-    String destination = generator.generate('x');
-
-    jedis.sdiffstore(destination, keys);
-
-    Set<String> destResult = jedis.smembers(destination);
-
-    assertEquals(result, destResult);
-  }
-
-  @Test
-  public void actuallyTestSDiff() {
+  public void testSDiff() {
     String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
     String[] secondSet = new String[] {"apple", "microsoft", "linux"};
     String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
@@ -302,10 +265,13 @@ public class SetsJUnitTest {
 
     Set<String> shouldBeEmpty = jedis.sdiff("doesNotExist", "set1", "set2", "set3");
     assertThat(shouldBeEmpty).isEmpty();
+
+    Set<String> copySet = jedis.sdiff("set1");
+    assertThat(copySet).containsExactlyInAnyOrder(firstSet);
   }
 
   @Test
-  public void actuallyTestSDiffStore() {
+  public void testSDiffStore() {
     String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
     String[] secondSet = new String[] {"apple", "microsoft", "linux"};
     String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
@@ -335,6 +301,11 @@ public class SetsJUnitTest {
     emptyResultSet = jedis.smembers("set1");
     assertThat(emptySetSize).isEqualTo(0L);
     assertThat(emptyResultSet).isEmpty();
+
+    Long copySetSize = jedis.sdiffstore("copySet", "set2");
+    Set<String> copyResultSet = jedis.smembers("copySet");
+    assertThat(copySetSize).isEqualTo(secondSet.length);
+    assertThat(copyResultSet.toArray()).containsExactlyInAnyOrder((Object[]) secondSet);
   }
 
   @Test
