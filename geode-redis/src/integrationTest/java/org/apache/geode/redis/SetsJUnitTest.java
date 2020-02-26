@@ -361,6 +361,44 @@ public class SetsJUnitTest {
   }
 
   @Test
+  public void testSInterStore() {
+    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    jedis.sadd("set1", firstSet);
+    jedis.sadd("set2", secondSet);
+    jedis.sadd("set3", thirdSet);
+
+    Long resultSize = jedis.sinterstore("result", "set1", "set2", "set3");
+    Set<String> resultSet = jedis.smembers("result");
+
+    String[] expected = new String[] {"peach"};
+    assertThat(resultSize).isEqualTo(expected.length);
+    assertThat(resultSet).containsExactlyInAnyOrder(expected);
+
+    Long otherResultSize = jedis.sinterstore("set1", "set1", "set2");
+    Set<String> otherResultSet = jedis.smembers("set1");
+    String[] otherExpected = new String[] {"apple", "peach"};
+    // assertThat(otherResultSize).isEqualTo(otherExpected.length);
+    assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
+
+    Long emptySetSize = jedis.sinterstore("newEmpty", "nonexistent", "set2", "set3");
+    Set<String> emptyResultSet = jedis.smembers("newEmpty");
+    assertThat(emptySetSize).isEqualTo(0L);
+    assertThat(emptyResultSet).isEmpty();
+
+    emptySetSize = jedis.sinterstore("set1", "nonexistent", "set2", "set3");
+    emptyResultSet = jedis.smembers("set1");
+    assertThat(emptySetSize).isEqualTo(0L);
+    assertThat(emptyResultSet).isEmpty();
+
+    Long copySetSize = jedis.sinterstore("copySet", "set2", "newEmpty");
+    Set<String> copyResultSet = jedis.smembers("copySet");
+    assertThat(copySetSize).isEqualTo(0);
+    assertThat(copyResultSet).isEmpty();
+  }
+
+  @Test
   public void testSUnionAndStore() {
     int numSets = 3;
     int elements = 10;

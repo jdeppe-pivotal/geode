@@ -31,11 +31,13 @@ public class SDiffExecutor extends SetOpExecutor {
   @Override
   protected Set<ByteArrayWrapper> setOp(Set<ByteArrayWrapper> firstSet,
       List<Set<ByteArrayWrapper>> setList) {
-    if (firstSet == null)
+    if (firstSet == null) {
       return null;
+    }
     Set<ByteArrayWrapper> copy = new HashSet<>(firstSet);
-    for (Set<ByteArrayWrapper> set : setList)
+    for (Set<ByteArrayWrapper> set : setList) {
       copy.removeAll(set);
+    }
     return copy;
   }
 
