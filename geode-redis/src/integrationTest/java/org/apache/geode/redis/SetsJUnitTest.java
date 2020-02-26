@@ -361,6 +361,29 @@ public class SetsJUnitTest {
   }
 
   @Test
+  public void testSInter() {
+    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    jedis.sadd("set1", firstSet);
+    jedis.sadd("set2", secondSet);
+    jedis.sadd("set3", thirdSet);
+
+    Set<String> resultSet = jedis.sinter("set1", "set2", "set3");
+
+    String[] expected = new String[] {"peach"};
+    assertThat(resultSet).containsExactlyInAnyOrder(expected);
+
+    Set<String> emptyResultSet = jedis.sinter("nonexistent", "set2", "set3");
+    assertThat(emptyResultSet).isEmpty();
+
+    jedis.sadd("newEmpty", "born2die");
+    jedis.srem("newEmpty", "born2die");
+    Set<String> otherEmptyResultSet = jedis.sinter( "set2", "newEmpty");
+    assertThat(otherEmptyResultSet).isEmpty();
+  }
+
+  @Test
   public void testSInterStore() {
     String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
     String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
@@ -379,7 +402,7 @@ public class SetsJUnitTest {
     Long otherResultSize = jedis.sinterstore("set1", "set1", "set2");
     Set<String> otherResultSet = jedis.smembers("set1");
     String[] otherExpected = new String[] {"apple", "peach"};
-    // assertThat(otherResultSize).isEqualTo(otherExpected.length);
+     assertThat(otherResultSize).isEqualTo(otherExpected.length);
     assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
 
     Long emptySetSize = jedis.sinterstore("newEmpty", "nonexistent", "set2", "set3");
@@ -396,6 +419,80 @@ public class SetsJUnitTest {
     Set<String> copyResultSet = jedis.smembers("copySet");
     assertThat(copySetSize).isEqualTo(0);
     assertThat(copyResultSet).isEmpty();
+  }
+
+  @Test
+  public void testConcurrentSInterStore() throws InterruptedException {
+    int ENTRIES = 10;
+    int SUBSET_SIZE = 10;
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    Set<String> masterSet = new HashSet<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    List<Set<String>> otherSets = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      Set<String> oneSet = new HashSet<>();
+      for (int j = 0; j < SUBSET_SIZE; j++) {
+        oneSet.add("set-" + i + "-" + j);
+      }
+      otherSets.add(oneSet);
+    }
+
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
+
+    for (int i = 0; i < ENTRIES; i++) {
+      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
+      jedis.sadd("set-" + i, masterSet.toArray(new String[] {}));
+    }
+
+    Runnable runnable1 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        jedis.sinterstore("master", "master", "set-" + i);
+        Thread.yield();
+      }
+    };
+
+    Runnable runnable2 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        jedis2.sinterstore("master", "master", "set-" + i);
+        Thread.yield();
+      }
+    };
+
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
+  }
+
+  @Test
+  public void testSUnion() {
+    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    jedis.sadd("set1", firstSet);
+    jedis.sadd("set2", secondSet);
+    jedis.sadd("set3", thirdSet);
+
+    Set<String> resultSet = jedis.sunion("set1", "set2");
+    String[] expected = new String[] {"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
+    assertThat(resultSet).containsExactlyInAnyOrder(expected);
+
+    Set<String> otherResultSet = jedis.sunion("nonexistent", "set1");
+    assertThat(otherResultSet).containsExactlyInAnyOrder(firstSet);
+
+    jedis.sadd("newEmpty", "born2die");
+    jedis.srem("newEmpty", "born2die");
+    Set<String> yetAnotherResultSet = jedis.sunion( "set2", "newEmpty");
+    assertThat(yetAnotherResultSet).containsExactlyInAnyOrder(secondSet);
   }
 
   @Test
