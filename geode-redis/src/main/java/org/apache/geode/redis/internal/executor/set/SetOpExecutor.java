@@ -49,69 +49,89 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
     }
 
     ByteArrayWrapper firstSetKey = new ByteArrayWrapper(commandElems.get(setsStartIndex++));
-    try (AutoCloseableLock regionLock = withRegionLock(context, destination)) {
-      Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = this.getRegion(context);
-      Set<ByteArrayWrapper> firstSet = region.get(firstSetKey);
-
-      List<Set<ByteArrayWrapper>> setList = new ArrayList<>();
-      for (int i = setsStartIndex; i < commandElems.size(); i++) {
-        ByteArrayWrapper key = new ByteArrayWrapper(commandElems.get(i));
-
-        Set<ByteArrayWrapper> entry = region.get(key);
-        if (entry != null) {
-          setList.add(entry);
-        } else if (this instanceof SInterExecutor) {
-          setList.add(new HashSet<>());
+    if (destination != null) {
+      try (AutoCloseableLock regionLock = withRegionLock(context, destination)) {
+        if (DoActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
+            destination,
+            firstSetKey)) {
+          return;
         }
-      }
-      if (setList.isEmpty()) {
-        if (isStorage()) {
-          command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), 0));
-          context.getRegionProvider().removeKey(destination);
-        } else {
-          respondBulkStrings(command, context, firstSet);
-        }
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        command.setResponse(
+            Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+        return;
+      } catch (TimeoutException e) {
+        command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+            "Timeout acquiring lock. Please try again."));
         return;
       }
-
-      Set<ByteArrayWrapper> resultSet = setOp(firstSet, setList);
-      if (isStorage()) {
-        Set<ByteArrayWrapper> newSet = null; // (Region<ByteArrayWrapper, Boolean>)
-        // regionProvider.getRegion(destination);
-        regionProvider.removeKey(destination);
-        if (resultSet != null) {
-          Set<ByteArrayWrapper> set = new HashSet<>();
-          for (ByteArrayWrapper entry : resultSet) {
-            set.add(entry);
-          }
-          if (!set.isEmpty()) {
-            newSet = new HashSet<>(set);
-            region.put(destination, newSet);
-            context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
-          }
-          command
-              .setResponse(
-                  Coder.getIntegerResponse(context.getByteBufAllocator(), resultSet.size()));
-        } else {
-          command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), 0));
-        }
-      } else {
-        if (resultSet == null || resultSet.isEmpty()) {
-          command.setResponse(Coder.getEmptyArrayResponse(context.getByteBufAllocator()));
-        } else {
-          respondBulkStrings(command, context, resultSet);
-        }
+    } else {
+      if (DoActualSetOperation(command, context, commandElems, setsStartIndex, regionProvider,
+          destination,
+          firstSetKey)) {
+        return;
       }
-    } catch (InterruptedException e) {
-      Thread.currentThread().interrupt();
-      command.setResponse(
-          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
-      return;
-    } catch (TimeoutException e) {
-      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
-          "Timeout acquiring lock. Please try again."));
-      return;
     }
+  }
+
+  private boolean DoActualSetOperation(Command command, ExecutionHandlerContext context,
+                                       List<byte[]> commandElems, int setsStartIndex,
+                                       RegionProvider regionProvider, ByteArrayWrapper destination,
+                                       ByteArrayWrapper firstSetKey) {
+    Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = this.getRegion(context);
+    Set<ByteArrayWrapper> firstSet = region.get(firstSetKey);
+
+    List<Set<ByteArrayWrapper>> setList = new ArrayList<>();
+    for (int i = setsStartIndex; i < commandElems.size(); i++) {
+      ByteArrayWrapper key = new ByteArrayWrapper(commandElems.get(i));
+
+      Set<ByteArrayWrapper> entry = region.get(key);
+      if (entry != null) {
+        setList.add(entry);
+      } else if (this instanceof SInterExecutor) {
+        setList.add(new HashSet<>());
+      }
+    }
+    if (setList.isEmpty()) {
+      if (isStorage()) {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), 0));
+        context.getRegionProvider().removeKey(destination);
+      } else {
+        respondBulkStrings(command, context, firstSet);
+      }
+      return true;
+    }
+
+    Set<ByteArrayWrapper> resultSet = setOp(firstSet, setList);
+    if (isStorage()) {
+      Set<ByteArrayWrapper> newSet = null; // (Region<ByteArrayWrapper, Boolean>)
+      // regionProvider.getRegion(destination);
+      regionProvider.removeKey(destination);
+      if (resultSet != null) {
+        Set<ByteArrayWrapper> set = new HashSet<>();
+        for (ByteArrayWrapper entry : resultSet) {
+          set.add(entry);
+        }
+        if (!set.isEmpty()) {
+          newSet = new HashSet<>(set);
+          region.put(destination, newSet);
+          context.getKeyRegistrar().register(destination, RedisDataType.REDIS_SET);
+        }
+        command
+            .setResponse(
+                Coder.getIntegerResponse(context.getByteBufAllocator(), resultSet.size()));
+      } else {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), 0));
+      }
+    } else {
+      if (resultSet == null || resultSet.isEmpty()) {
+        command.setResponse(Coder.getEmptyArrayResponse(context.getByteBufAllocator()));
+      } else {
+        respondBulkStrings(command, context, resultSet);
+      }
+    }
+    return false;
   }
 
   protected abstract boolean isStorage();

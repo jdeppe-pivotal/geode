@@ -341,6 +341,8 @@ public class SetsJUnitTest {
   public void testConcurrentSDiffStore() throws InterruptedException {
     int ENTRIES = 10;
     int SUBSET_SIZE = 10;
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
     Set<String> masterSet = new HashSet<>();
     for (int i = 0; i < ENTRIES; i++) {
       masterSet.add("master-" + i);
@@ -362,15 +364,22 @@ public class SetsJUnitTest {
       jedis.sadd("master", otherSets.get(i).toArray(new String[] {}));
     }
 
-    Runnable runnable = () -> {
+    Runnable runnable1 = () -> {
       for (int i = 0; i < ENTRIES; i++) {
         jedis.sdiffstore("master", "master", "set-" + i);
         Thread.yield();
       }
     };
 
-    Thread thread1 = new Thread(runnable);
-    Thread thread2 = new Thread(runnable);
+    Runnable runnable2 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        jedis2.sdiffstore("master", "master", "set-" + i);
+        Thread.yield();
+      }
+    };
+
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
 
     thread1.start();
     thread2.start();
