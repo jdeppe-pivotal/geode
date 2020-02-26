@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +33,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.assertj.core.util.Arrays;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -336,27 +338,44 @@ public class SetsJUnitTest {
   }
 
   @Test
-  public void testConcurrentSDiffStore() {
-    // set up array of sets to subtract
-    // Set[100] setArray = createSets();
+  public void testConcurrentSDiffStore() throws InterruptedException {
+    int ENTRIES = 1000;
+    Set<String> masterSet = new HashSet<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
 
-    // set up set to subtract from
-    // Set masterSet;
-    //
-    // masterSet.add(UniqueStuff);
-    // masterSet.add(setArray);
+    List<Set<String>> otherSets = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      Set<String> oneSet = new HashSet<>();
+      for (int j = 0; j < 100; j++) {
+        oneSet.add("set-" + i + "-" + j);
+      }
+      otherSets.add(oneSet);
+    }
 
-    // Fire off threads to do subtraction
-    // thread 1 does 1-10
-    // thread 2 does 11-20
-    // ...
+    jedis.sadd("master", masterSet.toArray(new String[]{}));
 
-    // thread X also does 1-30
+    for (int i = 0; i < ENTRIES; i++) {
+      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
+      jedis.sadd("master" + i, otherSets.get(i).toArray(new String[] {}));
+    }
 
-    // wait for operations to finish
+    Runnable runnable = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        jedis.sdiffstore("master", "master", "set-" + i);
+      }
+    };
 
-    // confirm expected result
-    // assertThat(masterSet).containsExactlyInAnyOrder(UniqueStuff);
+    Thread thread1 = new Thread(runnable);
+    Thread thread2 = new Thread(runnable);
+
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
   @Test

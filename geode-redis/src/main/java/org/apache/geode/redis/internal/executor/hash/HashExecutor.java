@@ -36,14 +36,6 @@ public abstract class HashExecutor extends AbstractExecutor {
 
   protected final int FIELD_INDEX = 2;
 
-  // @Override
-  // @SuppressWarnings("unchecked")
-  // protected Region<ByteArrayWrapper, ByteArrayWrapper> getOrCreateRegion(
-  // ExecutionHandlerContext context, ByteArrayWrapper key, RedisDataType type) {
-  // return (Region<ByteArrayWrapper, ByteArrayWrapper>) context.getRegionProvider()
-  // .getOrCreateRegion(key, type, context);
-  // }
-
   /**
    * Get the save map
    *
@@ -51,7 +43,6 @@ public abstract class HashExecutor extends AbstractExecutor {
    * @param key the region hash key region:<key>
    * @return the map data
    */
-
   protected Map<ByteArrayWrapper, ByteArrayWrapper> getMap(ExecutionHandlerContext context,
       ByteArrayWrapper key) {
     Region<ByteArrayWrapper, Map<ByteArrayWrapper, ByteArrayWrapper>> region =
