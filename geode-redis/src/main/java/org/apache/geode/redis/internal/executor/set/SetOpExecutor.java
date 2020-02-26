@@ -68,9 +68,9 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
   }
 
   private boolean doActualSetOperation(Command command, ExecutionHandlerContext context,
-                                       List<byte[]> commandElems, int setsStartIndex,
-                                       RegionProvider regionProvider, ByteArrayWrapper destination,
-                                       ByteArrayWrapper firstSetKey) {
+      List<byte[]> commandElems, int setsStartIndex,
+      RegionProvider regionProvider, ByteArrayWrapper destination,
+      ByteArrayWrapper firstSetKey) {
     Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = this.getRegion(context);
     Set<ByteArrayWrapper> firstSet = region.get(firstSetKey);
 
@@ -124,5 +124,5 @@ public abstract class SetOpExecutor extends SetExecutor implements Extendable {
   protected abstract boolean isStorage();
 
   protected abstract Set<ByteArrayWrapper> setOp(Set<ByteArrayWrapper> firstSet,
-                                                 List<Set<ByteArrayWrapper>> setList);
+      List<Set<ByteArrayWrapper>> setList);
 }

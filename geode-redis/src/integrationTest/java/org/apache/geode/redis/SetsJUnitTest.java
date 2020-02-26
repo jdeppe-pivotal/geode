@@ -33,7 +33,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import org.assertj.core.util.Arrays;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,6 +42,7 @@ import redis.clients.jedis.Jedis;
 
 import org.apache.geode.cache.CacheFactory;
 import org.apache.geode.cache.GemFireCache;
+import org.apache.geode.internal.AvailablePortHelper;
 import org.apache.geode.management.internal.cli.util.ThreePhraseGenerator;
 import org.apache.geode.test.junit.categories.RedisTest;
 
@@ -62,7 +62,7 @@ public class SetsJUnitTest {
     cf.set(MCAST_PORT, "0");
     cf.set(LOCATORS, "");
     cache = cf.create();
-    // port = AvailablePortHelper.getRandomAvailableTCPPort();
+    port = AvailablePortHelper.getRandomAvailableTCPPort();
     server = new GeodeRedisServer("localhost", port);
 
     server.start();
@@ -310,8 +310,8 @@ public class SetsJUnitTest {
 
   @Test
   public void testConcurrentSDiffStore() throws InterruptedException {
-    int ENTRIES = 10;
-    int SUBSET_SIZE = 10;
+    int ENTRIES = 100;
+    int SUBSET_SIZE = 100;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
 
     Set<String> masterSet = new HashSet<>();
@@ -328,7 +328,7 @@ public class SetsJUnitTest {
       otherSets.add(oneSet);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[]{}));
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
 
     for (int i = 0; i < ENTRIES; i++) {
       jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
@@ -379,7 +379,7 @@ public class SetsJUnitTest {
 
     jedis.sadd("newEmpty", "born2die");
     jedis.srem("newEmpty", "born2die");
-    Set<String> otherEmptyResultSet = jedis.sinter( "set2", "newEmpty");
+    Set<String> otherEmptyResultSet = jedis.sinter("set2", "newEmpty");
     assertThat(otherEmptyResultSet).isEmpty();
   }
 
@@ -402,7 +402,7 @@ public class SetsJUnitTest {
     Long otherResultSize = jedis.sinterstore("set1", "set1", "set2");
     Set<String> otherResultSet = jedis.smembers("set1");
     String[] otherExpected = new String[] {"apple", "peach"};
-     assertThat(otherResultSize).isEqualTo(otherExpected.length);
+    assertThat(otherResultSize).isEqualTo(otherExpected.length);
     assertThat(otherResultSet).containsExactlyInAnyOrder(otherExpected);
 
     Long emptySetSize = jedis.sinterstore("newEmpty", "nonexistent", "set2", "set3");
@@ -423,8 +423,8 @@ public class SetsJUnitTest {
 
   @Test
   public void testConcurrentSInterStore() throws InterruptedException {
-    int ENTRIES = 10;
-    int SUBSET_SIZE = 10;
+    int ENTRIES = 100;
+    int SUBSET_SIZE = 100;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
 
     Set<String> masterSet = new HashSet<>();
@@ -441,7 +441,7 @@ public class SetsJUnitTest {
       otherSets.add(oneSet);
     }
 
-    jedis.sadd("master", masterSet.toArray(new String[]{}));
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
 
     for (int i = 0; i < ENTRIES; i++) {
       jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
@@ -483,7 +483,8 @@ public class SetsJUnitTest {
     jedis.sadd("set3", thirdSet);
 
     Set<String> resultSet = jedis.sunion("set1", "set2");
-    String[] expected = new String[] {"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
+    String[] expected =
+        new String[] {"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
     assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
     Set<String> otherResultSet = jedis.sunion("nonexistent", "set1");
@@ -491,82 +492,91 @@ public class SetsJUnitTest {
 
     jedis.sadd("newEmpty", "born2die");
     jedis.srem("newEmpty", "born2die");
-    Set<String> yetAnotherResultSet = jedis.sunion( "set2", "newEmpty");
+    Set<String> yetAnotherResultSet = jedis.sunion("set2", "newEmpty");
     assertThat(yetAnotherResultSet).containsExactlyInAnyOrder(secondSet);
   }
 
   @Test
-  public void testSUnionAndStore() {
-    int numSets = 3;
-    int elements = 10;
-    String[] keys = new String[numSets];
-    ArrayList<Set<String>> sets = new ArrayList<Set<String>>();
-    for (int j = 0; j < numSets; j++) {
-      keys[j] = generator.generate('x');
-      Set<String> newSet = new HashSet<String>();
-      for (int i = 0; i < elements; i++) {
-        newSet.add(generator.generate('x'));
-      }
-      sets.add(newSet);
-    }
+  public void testSUnionStore() {
+    String[] firstSet = new String[] {"pear", "apple", "plum", "orange", "peach"};
+    String[] secondSet = new String[] {"apple", "microsoft", "linux", "peach"};
+    String[] thirdSet = new String[] {"luigi", "bowser", "peach", "mario"};
+    jedis.sadd("set1", firstSet);
+    jedis.sadd("set2", secondSet);
+    jedis.sadd("set3", thirdSet);
 
-    for (int i = 0; i < numSets; i++) {
-      Set<String> s = sets.get(i);
-      String[] stringArray = s.toArray(new String[s.size()]);
-      jedis.sadd(keys[i], stringArray);
-    }
+    Long resultSize = jedis.sunionstore("result", "set1", "set2");
+    assertThat(resultSize).isEqualTo(7);
 
-    Set<String> result = sets.get(0);
-    for (int i = 1; i < numSets; i++) {
-      result.addAll(sets.get(i));
-    }
+    Set<String> resultSet = jedis.smembers("result");
+    String[] expected =
+        new String[] {"pear", "apple", "plum", "orange", "peach", "microsoft", "linux"};
+    assertThat(resultSet).containsExactlyInAnyOrder(expected);
 
-    assertEquals(result, jedis.sunion(keys));
+    Long notEmptyResultSize = jedis.sunionstore("notempty", "nonexistent", "set1");
+    Set<String> notEmptyResultSet = jedis.smembers("notempty");
+    assertThat(notEmptyResultSize).isEqualTo(firstSet.length);
+    assertThat(notEmptyResultSet).containsExactlyInAnyOrder(firstSet);
 
-    String destination = generator.generate('x');
-
-    jedis.sunionstore(destination, keys);
-
-    Set<String> destResult = jedis.smembers(destination);
-
-    assertEquals(result, destResult);
+    jedis.sadd("newEmpty", "born2die");
+    jedis.srem("newEmpty", "born2die");
+    Long newNotEmptySize = jedis.sunionstore("newNotEmpty", "set2", "newEmpty");
+    Set<String> newNotEmptySet = jedis.smembers("newNotEmpty");
+    assertThat(newNotEmptySize).isEqualTo(secondSet.length);
+    assertThat(newNotEmptySet).containsExactlyInAnyOrder(secondSet);
   }
 
   @Test
-  public void testSInterAndStore() {
-    int numSets = 3;
-    int elements = 10;
-    String[] keys = new String[numSets];
-    ArrayList<Set<String>> sets = new ArrayList<Set<String>>();
-    for (int j = 0; j < numSets; j++) {
-      keys[j] = generator.generate('x');
-      Set<String> newSet = new HashSet<String>();
-      for (int i = 0; i < elements; i++) {
-        newSet.add(generator.generate('x'));
+  public void testConcurrentSUnionStore() throws InterruptedException {
+    int ENTRIES = 100;
+    int SUBSET_SIZE = 100;
+    Jedis jedis2 = new Jedis("localhost", port, 10000000);
+
+    Set<String> masterSet = new HashSet<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    List<Set<String>> otherSets = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      Set<String> oneSet = new HashSet<>();
+      for (int j = 0; j < SUBSET_SIZE; j++) {
+        oneSet.add("set-" + i + "-" + j);
       }
-      sets.add(newSet);
+      otherSets.add(oneSet);
     }
 
-    for (int i = 0; i < numSets; i++) {
-      Set<String> s = sets.get(i);
-      String[] stringArray = s.toArray(new String[s.size()]);
-      jedis.sadd(keys[i], stringArray);
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
+
+    for (int i = 0; i < ENTRIES; i++) {
+      jedis.sadd("set-" + i, otherSets.get(i).toArray(new String[] {}));
     }
 
-    Set<String> result = sets.get(0);
-    for (int i = 1; i < numSets; i++) {
-      result.retainAll(sets.get(i));
-    }
+    Runnable runnable1 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        jedis.sunionstore("master", "master", "set-" + i);
+        Thread.yield();
+      }
+    };
 
-    assertEquals(result, jedis.sinter(keys));
+    Runnable runnable2 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        jedis2.sunionstore("master", "master", "set-" + i);
+        Thread.yield();
+      }
+    };
 
-    String destination = generator.generate('x');
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
 
-    jedis.sinterstore(destination, keys);
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
 
-    Set<String> destResult = jedis.smembers(destination);
+    otherSets.forEach(masterSet::addAll);
 
-    assertEquals(result, destResult);
+    assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
   @After
