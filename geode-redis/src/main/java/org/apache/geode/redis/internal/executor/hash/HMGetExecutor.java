@@ -29,7 +29,7 @@ import org.apache.geode.redis.internal.RedisDataType;
  * <pre>
  * Implementation of the HMGET command.
  * Returns values associated with the specified fields in the hash stored for a given key.
-
+ *
  * Examples:
  *
  * redis> HSET myhash field1 "Hello"
@@ -42,7 +42,6 @@ import org.apache.geode.redis.internal.RedisDataType;
  * 3) (nil)
  *
  * </pre>
- *
  */
 public class HMGetExecutor extends HashExecutor {
 
@@ -79,8 +78,9 @@ public class HMGetExecutor extends HashExecutor {
     /*
      * This is done to preserve order in the output
      */
-    for (ByteArrayWrapper field : fields)
+    for (ByteArrayWrapper field : fields) {
       values.add(map.get(field));
+    }
 
     respondBulkStrings(command, context, values);
   }

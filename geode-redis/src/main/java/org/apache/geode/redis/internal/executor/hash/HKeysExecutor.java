@@ -66,7 +66,6 @@ public class HKeysExecutor extends HashExecutor {
         return;
       }
 
-
       keys = new HashSet<ByteArrayWrapper>(keyMap.keySet());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();

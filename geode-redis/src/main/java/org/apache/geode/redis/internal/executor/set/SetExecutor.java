@@ -33,7 +33,7 @@ public abstract class SetExecutor extends AbstractExecutor {
    * Default region name/key
    *
    *  SET_REGION_KEY =
-    new ByteArrayWrapper(Coder.stringToBytes("RedisSET"))
+   * new ByteArrayWrapper(Coder.stringToBytes("RedisSET"))
    * </pre>
    */
   public static final ByteArrayWrapper SET_REGION_KEY =

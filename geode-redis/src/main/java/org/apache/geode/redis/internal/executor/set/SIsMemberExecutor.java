@@ -62,7 +62,8 @@ public class SIsMemberExecutor extends SetExecutor {
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), EXISTS));
       // save key for next quick lookup
       context.getKeyRegistrar().register(key, RedisDataType.REDIS_SET);
-    } else
+    } else {
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));
+    }
   }
 }

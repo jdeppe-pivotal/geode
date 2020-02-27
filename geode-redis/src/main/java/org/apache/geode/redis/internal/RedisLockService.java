@@ -25,9 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import org.apache.geode.cache.TimeoutException;
 
 /**
- *
  * Locking mechanism to support Redis operations
- *
  */
 public class RedisLockService {
 

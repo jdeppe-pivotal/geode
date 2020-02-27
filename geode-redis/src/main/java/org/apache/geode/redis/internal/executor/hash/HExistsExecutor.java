@@ -40,7 +40,6 @@ import org.apache.geode.redis.internal.RedisConstants.ArityDef;
  * (integer) 0
  *
  * </pre>
- *
  */
 public class HExistsExecutor extends HashExecutor {
 
@@ -80,11 +79,11 @@ public class HExistsExecutor extends HashExecutor {
       return;
     }
 
-
-    if (hasField)
+    if (hasField) {
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), EXISTS));
-    else
+    } else {
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));
+    }
 
   }
 

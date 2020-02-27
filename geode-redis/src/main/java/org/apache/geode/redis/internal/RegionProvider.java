@@ -61,8 +61,8 @@ public class RegionProvider implements Closeable {
 
   /**
    * This is the Redis meta data {@link Region} that holds the {@link RedisDataType} information for
-   * all Regions created. The mapping is a {@link String} key which is the name of the
-   * {@link Region} created to hold the data to the RedisDataType it contains.
+   * all Regions created. The mapping is a {@link String} key which is the name of the {@link
+   * Region} created to hold the data to the RedisDataType it contains.
    */
   private final KeyRegistrar keyRegistrar;
 
@@ -111,8 +111,9 @@ public class RegionProvider implements Closeable {
       ScheduledExecutorService expirationExecutor, RegionShortcut defaultShortcut,
       Region<ByteArrayWrapper, Map<ByteArrayWrapper, ByteArrayWrapper>> hashRegion,
       Region<ByteArrayWrapper, Set<ByteArrayWrapper>> setRegion, Cache cache) {
-    if (stringsRegion == null || hLLRegion == null || redisMetaRegion == null)
+    if (stringsRegion == null || hLLRegion == null || redisMetaRegion == null) {
       throw new NullPointerException();
+    }
     this.hashRegion = hashRegion;
     this.setRegion = setRegion;
     this.regions = new ConcurrentHashMap<>();
@@ -128,8 +129,9 @@ public class RegionProvider implements Closeable {
   }
 
   public Region<?, ?> getRegion(ByteArrayWrapper key) {
-    if (key == null)
+    if (key == null) {
       return null;
+    }
 
     return this.regions.get(key);
 
@@ -139,8 +141,9 @@ public class RegionProvider implements Closeable {
     Lock lock = this.locks.get(key.toString());
     boolean locked = false;
     try {
-      if (lock != null)
+      if (lock != null) {
         locked = lock.tryLock();
+      }
       // If we cannot get the lock we ignore this remote event, this key has local event
       // that started independently, ignore this event to prevent deadlock
       if (locked) {
@@ -164,8 +167,9 @@ public class RegionProvider implements Closeable {
   }
 
   public boolean removeKey(ByteArrayWrapper key, RedisDataType type, boolean cancelExpiration) {
-    if (type == RedisDataType.REDIS_PROTECTED)
+    if (type == RedisDataType.REDIS_PROTECTED) {
       return false;
+    }
     Lock lock = this.locks.get(key.toString());
     try {
       if (lock != null) {// Strings/hlls will not have locks
@@ -193,12 +197,14 @@ public class RegionProvider implements Closeable {
       } catch (Exception exc) {
         return false;
       } finally {
-        if (cancelExpiration)
+        if (cancelExpiration) {
           cancelKeyExpiration(key);
-        else
+        } else {
           removeKeyExpiration(key);
-        if (lock != null)
+        }
+        if (lock != null) {
           this.locks.remove(key.toString());
+        }
       }
     } finally {
       if (lock != null) {
@@ -213,11 +219,13 @@ public class RegionProvider implements Closeable {
   }
 
   public void createRemoteRegionReferenceLocally(ByteArrayWrapper key, RedisDataType type) {
-    if (type == null || type == RedisDataType.REDIS_STRING || type == RedisDataType.REDIS_HLL)
+    if (type == null || type == RedisDataType.REDIS_STRING || type == RedisDataType.REDIS_HLL) {
       return;
+    }
     Region<?, ?> r = this.regions.get(key);
-    if (r != null)
+    if (r != null) {
       return;
+    }
     if (!this.regions.containsKey(key)) {
       String stringKey = key.toString();
       Lock lock = this.locks.get(stringKey);
@@ -235,8 +243,9 @@ public class RegionProvider implements Closeable {
           r = cache.getRegion(key.toString());
           // If r is null, this implies that we are after a create/destroy
           // simply ignore. Calls to getRegion or getOrCreate will work correctly
-          if (r == null)
+          if (r == null) {
             return;
+          }
 
           if (type == RedisDataType.REDIS_LIST) {
             doInitializeList(key, r);
@@ -280,7 +289,7 @@ public class RegionProvider implements Closeable {
         r = regions.get(key);
         if (r == null) {
           boolean hasTransaction = context != null && context.hasTransaction(); // Can create
-                                                                                // without context
+          // without context
           CacheTransactionManager txm = null;
           TransactionId transactionId = null;
           try {
@@ -315,8 +324,9 @@ public class RegionProvider implements Closeable {
               this.keyRegistrar.register(key, type);
             }
           } finally {
-            if (hasTransaction)
+            if (hasTransaction) {
               txm.resume(transactionId);
+            }
           }
         }
       } finally {
@@ -401,8 +411,9 @@ public class RegionProvider implements Closeable {
   private Region<?, ?> createRegionGlobally(String regionPath) {
     Region<?, ?> r = null;
     r = cache.getRegion(regionPath);
-    if (r != null)
+    if (r != null) {
       return r;
+    }
     do {
       createRegionCmd.setCache(cache);
       ResultModel resultModel =
@@ -466,8 +477,9 @@ public class RegionProvider implements Closeable {
    */
   public boolean setExpiration(ByteArrayWrapper key, long delay) {
     RedisDataType type = this.keyRegistrar.getType(key);
-    if (type == null)
+    if (type == null) {
       return false;
+    }
     ScheduledFuture<?> future = this.expirationExecutor
         .schedule(new ExpirationExecutor(key, type, this), delay, TimeUnit.MILLISECONDS);
     this.expirationsMap.put(key, future);
@@ -487,12 +499,14 @@ public class RegionProvider implements Closeable {
      */
     boolean canceled = cancelKeyExpiration(key);
 
-    if (!canceled)
+    if (!canceled) {
       return false;
+    }
 
     RedisDataType type = this.keyRegistrar.getType(key);
-    if (type == null)
+    if (type == null) {
       return false;
+    }
 
     ScheduledFuture<?> future = this.expirationExecutor
         .schedule(new ExpirationExecutor(key, type, this), delay, TimeUnit.MILLISECONDS);
@@ -508,8 +522,9 @@ public class RegionProvider implements Closeable {
    */
   public boolean cancelKeyExpiration(ByteArrayWrapper key) {
     ScheduledFuture<?> future = expirationsMap.remove(key);
-    if (future == null)
+    if (future == null) {
       return false;
+    }
     return future.cancel(false);
   }
 

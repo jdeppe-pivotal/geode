@@ -29,7 +29,6 @@ import org.apache.geode.redis.internal.executor.AbstractExecutor;
 
 /**
  * Executor for handling HASH datatypes
- *
  */
 public abstract class HashExecutor extends AbstractExecutor {
 

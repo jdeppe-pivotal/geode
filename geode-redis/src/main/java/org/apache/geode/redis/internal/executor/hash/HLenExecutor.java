@@ -37,7 +37,6 @@ import org.apache.geode.redis.internal.RedisConstants.ArityDef;
  * (integer) 1
  * redis> HLEN myhash
  * </pre>
- *
  */
 public class HLenExecutor extends HashExecutor {
 

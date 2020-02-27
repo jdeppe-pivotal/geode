@@ -87,7 +87,6 @@ public class HGetAllExecutor extends HashExecutor {
       return;
     }
 
-
     command.setResponse(Coder.getKeyValArrayResponse(context.getByteBufAllocator(), entries));
   }
 

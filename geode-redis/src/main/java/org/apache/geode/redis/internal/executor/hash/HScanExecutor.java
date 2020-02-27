@@ -32,9 +32,7 @@ import org.apache.geode.redis.internal.RedisConstants.ArityDef;
 import org.apache.geode.redis.internal.executor.AbstractScanExecutor;
 
 /**
- *
  * Implementation of the HScan command used to incrementally iterate over a collection of elements.
- *
  */
 public class HScanExecutor extends AbstractScanExecutor {
 
@@ -155,14 +153,16 @@ public class HScanExecutor extends AbstractScanExecutor {
           returnList.add(value);
           numElements++;
         }
-      } else
+      } else {
         break;
+      }
     }
 
-    if (i == size - 1)
+    if (i == size - 1) {
       returnList.add(0, String.valueOf(0));
-    else
+    } else {
       returnList.add(0, String.valueOf(i));
+    }
     return returnList;
   }
 

@@ -31,22 +31,22 @@ import org.apache.geode.redis.internal.RedisDataType;
  *  Implementation of the Redis HVAL command to returns all values in the hash stored at a given
  * key.
  *
- *	Examples:
+ * 	Examples:
  *
- *	redis> HSET myhash field1 "Hello"
- *	(integer) 1
- *	redis> HSET myhash field2 "World"
- *	(integer) 1
- *	redis> HVALS myhash
- *	1) "Hello"
- *	2) "World"
+ * 	redis> HSET myhash field1 "Hello"
+ * 	(integer) 1
+ * 	redis> HSET myhash field2 "World"
+ * 	(integer) 1
+ * 	redis> HVALS myhash
+ * 	1) "Hello"
+ * 	2) "World"
  * </pre>
  */
 public class HValsExecutor extends HashExecutor {
 
   /**
    * <pre>
-   *	redis>
+   * 	redis>
    * </pre>
    *
    * @param command the command runtime handle

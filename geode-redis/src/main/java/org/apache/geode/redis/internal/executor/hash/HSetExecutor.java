@@ -60,7 +60,6 @@ public class HSetExecutor extends HashExecutor implements Extendable {
 
     ByteArrayWrapper key = command.getKey();
 
-
     Object oldValue;
     int fieldsAdded = 0;
 

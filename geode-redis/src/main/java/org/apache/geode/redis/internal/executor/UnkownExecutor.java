@@ -33,8 +33,9 @@ public class UnkownExecutor extends AbstractExecutor {
     if (processedCmds != null && !processedCmds.isEmpty()) {
 
       for (byte[] bytes : processedCmds) {
-        if (bytes == null || bytes.length == 0)
+        if (bytes == null || bytes.length == 0) {
           continue; // skip blanks
+        }
 
         commandProcessedText.append(Coder.bytesToString(bytes)).append(" ");
       }
