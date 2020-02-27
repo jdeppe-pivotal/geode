@@ -14,6 +14,8 @@
  */
 package org.apache.geode.redis.internal.executor.set;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -34,16 +36,26 @@ public class SPopExecutor extends SetExecutor {
   @Override
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
+    int popCount = 1;
 
-    if (commandElems.size() < 2) {
+    if (commandElems.size() < 2 || commandElems.size() > 3) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SPOP));
       return;
+    }
+
+    if (commandElems.size() == 3) {
+      try {
+        popCount = Integer.parseInt(new String(commandElems.get(2)));
+      } catch (NumberFormatException nex) {
+        command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SPOP));
+        return;
+      }
     }
 
     ByteArrayWrapper key = command.getKey();
     // getRegion(key);
 
-    final ByteArrayWrapper pop;
+    List<ByteArrayWrapper> popped = new ArrayList<>();
     try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
       Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = getRegion(context);
 
@@ -57,10 +69,16 @@ public class SPopExecutor extends SetExecutor {
       Random rand = new Random();
 
       ByteArrayWrapper[] entries = set.toArray(new ByteArrayWrapper[set.size()]);
+      Set<Integer> randomIndexes = new HashSet<>();
+      while (randomIndexes.size() < popCount) {
+        randomIndexes.add(rand.nextInt(entries.length));
+      }
 
-      pop = entries[rand.nextInt(entries.length)];
+      randomIndexes.forEach(i -> {
+        set.remove(entries[i]);
+        popped.add(entries[i]);
+      });
 
-      set.remove(pop);
       // save the updated set
       region.put(key, set);
     } catch (InterruptedException e) {
@@ -75,8 +93,12 @@ public class SPopExecutor extends SetExecutor {
     }
 
     try {
-      command
-          .setResponse(Coder.getBulkStringResponse(context.getByteBufAllocator(), pop.toBytes()));
+      if (popCount == 1) {
+        command
+            .setResponse(Coder.getBulkStringResponse(context.getByteBufAllocator(), popped.get(0)));
+      } else {
+        command.setResponse(Coder.getArrayResponse(context.getByteBufAllocator(), popped));
+      }
     } catch (CoderException e) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
           RedisConstants.SERVER_ERROR_MESSAGE));

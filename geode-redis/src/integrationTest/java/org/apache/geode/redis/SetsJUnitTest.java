@@ -69,6 +69,11 @@ public class SetsJUnitTest {
     jedis = new Jedis("localhost", port, 10000000);
   }
 
+  @After
+  public void cleanup() {
+    jedis.flushAll();
+  }
+
   @Test
   public void testSAddScard() {
     int elements = 10;
@@ -577,6 +582,62 @@ public class SetsJUnitTest {
     otherSets.forEach(masterSet::addAll);
 
     assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
+  }
+
+  @Test
+  public void testSPop() {
+    int ENTRIES = 10;
+
+    List<String> masterSet = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    String poppy = jedis.spop("master");
+
+    masterSet.remove(poppy);
+    assertThat(jedis.smembers("master").toArray()).containsExactlyInAnyOrder(masterSet.toArray());
+
+    assertThat(jedis.spop("spopnonexistent")).isNull();
+  }
+
+  @Test
+  public void testSPopWithCount() {
+    int ENTRIES = 10;
+
+    List<String> masterSet = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
+    Set<String> popped = jedis.spop("master", ENTRIES);
+
+    assertThat(jedis.smembers("master").toArray()).isEmpty();
+    assertThat(popped.toArray()).containsExactlyInAnyOrder(masterSet.toArray());
+  }
+
+  @Test
+  public void testManySPops() {
+    int ENTRIES = 100;
+
+    List<String> masterSet = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
+
+    List<String> popped = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      popped.add(jedis.spop("master"));
+    }
+
+    assertThat(jedis.smembers("master")).isEmpty();
+    assertThat(popped.toArray()).containsExactlyInAnyOrder(masterSet.toArray());
+
+    assertThat(jedis.spop("master")).isNull();
   }
 
   @After
