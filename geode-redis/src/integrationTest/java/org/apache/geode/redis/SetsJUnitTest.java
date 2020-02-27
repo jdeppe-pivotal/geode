@@ -32,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -685,6 +686,59 @@ public class SetsJUnitTest {
 
     popped1.addAll(popped2);
     assertThat(popped1.toArray()).containsExactlyInAnyOrder(masterSet.toArray());
+  }
+
+  @Test
+  public void testSRem() {
+    jedis.sadd("master", "field1", "field2");
+
+    Long sremCount = jedis.srem("master", "field1", "field2", "unknown");
+    assertThat(sremCount).isEqualTo(2);
+
+    sremCount = jedis.srem("master", "field1", "field2", "unknown");
+    assertThat(sremCount).isEqualTo(0);
+
+    sremCount = jedis.srem("unknownkey", "field1");
+    assertThat(sremCount).isEqualTo(0);
+  }
+
+  @Test
+  public void testConcurrentSRems() throws InterruptedException {
+    Jedis jedis2 = new Jedis("localhost", port, 100000);
+    int ENTRIES = 1000;
+
+    List<String> masterSet = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
+
+    AtomicLong sremmed1 = new AtomicLong(0);
+    Runnable runnable1 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        sremmed1.addAndGet(jedis.srem("master", masterSet.get(i)));
+      }
+    };
+
+    AtomicLong sremmed2 = new AtomicLong(0);
+    Runnable runnable2 = () -> {
+      for (int i = 0; i < ENTRIES; i++) {
+        sremmed2.addAndGet(jedis2.srem("master", masterSet.get(i)));
+      }
+    };
+
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    assertThat(jedis.smembers("master")).isEmpty();
+
+    assertThat(sremmed1.get() + sremmed2.get()).isEqualTo(ENTRIES);
   }
 
 }

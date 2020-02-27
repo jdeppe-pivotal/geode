@@ -53,7 +53,6 @@ public class SPopExecutor extends SetExecutor {
     }
 
     ByteArrayWrapper key = command.getKey();
-    // getRegion(key);
 
     List<ByteArrayWrapper> popped = new ArrayList<>();
     try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
@@ -68,16 +67,20 @@ public class SPopExecutor extends SetExecutor {
 
       Random rand = new Random();
 
-      ByteArrayWrapper[] entries = set.toArray(new ByteArrayWrapper[set.size()]);
       Set<Integer> randomIndexes = new HashSet<>();
       while (randomIndexes.size() < popCount) {
-        randomIndexes.add(rand.nextInt(entries.length));
+        randomIndexes.add(rand.nextInt(set.size()));
       }
 
-      randomIndexes.forEach(i -> {
-        set.remove(entries[i]);
-        popped.add(entries[i]);
-      });
+      int counter = 0;
+      for (ByteArrayWrapper entry : set) {
+        if (randomIndexes.contains(counter)) {
+          popped.add(entry);
+        }
+        counter++;
+      }
+
+      set.removeAll(popped);
 
       // save the updated set
       region.put(key, set);

@@ -17,7 +17,11 @@ package org.apache.geode.redis.internal.executor.set;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.geode.cache.CacheLoaderException;
+import org.apache.geode.cache.CacheWriterException;
 import org.apache.geode.cache.Region;
+import org.apache.geode.cache.TimeoutException;
+import org.apache.geode.redis.internal.AutoCloseableLock;
 import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.redis.internal.Coder;
 import org.apache.geode.redis.internal.Command;
@@ -43,24 +47,32 @@ public class SRemExecutor extends SetExecutor {
 
     Region<ByteArrayWrapper, Set<ByteArrayWrapper>> region = getRegion(context);
 
-    Set<ByteArrayWrapper> set = region.get(key);
+    int numRemoved = 0;
+    try (AutoCloseableLock regionLock = withRegionLock(context, key)) {
+      Set<ByteArrayWrapper> set = region.get(key);
 
-    if (set == null || set.isEmpty()) {
-      command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NONE_REMOVED));
+      if (set == null || set.isEmpty()) {
+        command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NONE_REMOVED));
+        return;
+      }
+
+      for (int i = 2; i < commandElems.size(); i++) {
+        if (set.remove(new ByteArrayWrapper(commandElems.get(i)))) {
+          numRemoved++;
+        }
+      }
+
+      region.put(key, set);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      command.setResponse(
+          Coder.getErrorResponse(context.getByteBufAllocator(), "Thread interrupted."));
+      return;
+    } catch (TimeoutException e) {
+      command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
+          "Timeout acquiring lock. Please try again."));
       return;
     }
-
-
-    int numRemoved = 0;
-
-    for (int i = 2; i < commandElems.size(); i++) {
-      Object oldVal;
-      oldVal = set.remove(new ByteArrayWrapper(commandElems.get(i)));
-      if (oldVal != null)
-        numRemoved++;
-    }
-
-    region.put(key, set);
 
     command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), numRemoved));
   }
