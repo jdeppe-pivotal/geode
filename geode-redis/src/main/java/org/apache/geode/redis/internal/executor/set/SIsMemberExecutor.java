@@ -27,22 +27,20 @@ import org.apache.geode.redis.internal.RedisDataType;
 
 public class SIsMemberExecutor extends SetExecutor {
 
-  private final int EXISTS = 1;
+  private static final int EXISTS = 1;
 
-  private final int NOT_EXISTS = 0;
+  private static final int NOT_EXISTS = 0;
 
   @Override
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
 
-    if (commandElems.size() < 3) {
+    if (commandElems.size() != 3) {
       command
           .setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SISMEMBER));
       return;
     }
 
-    // check by meta data key
-    // SISMEMBER companies ea64fe8c-e0a0-4439-a05d-d0738dd5ef80
     ByteArrayWrapper key = command.getKey();
     if (!context.getKeyRegistrar().isRegistered(key)) {
       command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), NOT_EXISTS));

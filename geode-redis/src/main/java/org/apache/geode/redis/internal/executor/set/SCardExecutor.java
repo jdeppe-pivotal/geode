@@ -34,7 +34,7 @@ public class SCardExecutor extends SetExecutor {
   public void executeCommand(Command command, ExecutionHandlerContext context) {
     List<byte[]> commandElems = command.getProcessedCommand();
 
-    if (commandElems.size() < 2) {
+    if (commandElems.size() != 2) {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(), ArityDef.SCARD));
       return;
     }
