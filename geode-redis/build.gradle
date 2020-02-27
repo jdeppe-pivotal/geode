@@ -29,6 +29,7 @@ dependencies {
 
   implementation(project(':geode-serialization'))
   implementation(project(':geode-logging'))
+  runtime(project(':geode-log4j'))
 
   testCompile('org.mockito:mockito-core')
   testCompile(project(':geode-junit'))
