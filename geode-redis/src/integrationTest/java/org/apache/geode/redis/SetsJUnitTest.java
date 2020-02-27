@@ -18,9 +18,6 @@ import static org.apache.geode.distributed.ConfigurationProperties.LOCATORS;
 import static org.apache.geode.distributed.ConfigurationProperties.LOG_LEVEL;
 import static org.apache.geode.distributed.ConfigurationProperties.MCAST_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,7 +80,7 @@ public class SetsJUnitTest {
   }
 
   @Test
-  public void testSAddScard() {
+  public void testSAddSCard() {
     int elements = 10;
     Set<String> strings = new HashSet<String>();
     String key = generator.generate('x');
@@ -91,16 +88,16 @@ public class SetsJUnitTest {
     String[] stringArray = strings.toArray(new String[strings.size()]);
 
     Long response = jedis.sadd(key, stringArray);
-    assertEquals(response, new Long(strings.size()));
+    assertThat(response).isEqualTo(strings.size());
 
     Long response2 = jedis.sadd(key, stringArray);
     assertThat(response2).isEqualTo(0L);
 
-    assertEquals(jedis.scard(key), new Long(strings.size()));
+    assertThat(jedis.scard(key)).isEqualTo(strings.size());
   }
 
   @Test
-  public void testConcurrentSAddScard_sameKeyPerClient()
+  public void testConcurrentSAddSCard_sameKeyPerClient()
       throws InterruptedException, ExecutionException {
     int elements = 1000;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
@@ -114,21 +111,21 @@ public class SetsJUnitTest {
     String[] stringArray2 = strings2.toArray(new String[strings2.size()]);
 
     ExecutorService pool = Executors.newFixedThreadPool(2);
-    Callable<Integer> callable1 = () -> doABunchOfSadds(key, stringArray1, jedis);
-    Callable<Integer> callable2 = () -> doABunchOfSadds(key, stringArray2, jedis2);
+    Callable<Integer> callable1 = () -> doABunchOfSAdds(key, stringArray1, jedis);
+    Callable<Integer> callable2 = () -> doABunchOfSAdds(key, stringArray2, jedis2);
     Future<Integer> future1 = pool.submit(callable1);
     Future<Integer> future2 = pool.submit(callable2);
 
     assertThat(future1.get()).isEqualTo(strings1.size());
     assertThat(future2.get()).isEqualTo(strings2.size());
 
-    assertEquals(jedis.scard(key), new Long(strings1.size() + strings2.size()));
+    assertThat(jedis.scard(key)).isEqualTo(strings1.size() + strings2.size());
 
     pool.shutdown();
   }
 
   @Test
-  public void testConcurrentSAddScard_differentKeyPerClient()
+  public void testConcurrentSAddSCard_differentKeyPerClient()
       throws InterruptedException, ExecutionException {
     int elements = 1000;
     Jedis jedis2 = new Jedis("localhost", port, 10000000);
@@ -140,16 +137,16 @@ public class SetsJUnitTest {
     String[] stringArray = strings.toArray(new String[strings.size()]);
 
     ExecutorService pool = Executors.newFixedThreadPool(2);
-    Callable<Integer> callable1 = () -> doABunchOfSadds(key1, stringArray, jedis);
-    Callable<Integer> callable2 = () -> doABunchOfSadds(key2, stringArray, jedis2);
+    Callable<Integer> callable1 = () -> doABunchOfSAdds(key1, stringArray, jedis);
+    Callable<Integer> callable2 = () -> doABunchOfSAdds(key2, stringArray, jedis2);
     Future<Integer> future1 = pool.submit(callable1);
     Future<Integer> future2 = pool.submit(callable2);
 
     assertThat(future1.get()).isEqualTo(strings.size());
     assertThat(future2.get()).isEqualTo(strings.size());
 
-    assertEquals(jedis.scard(key1), new Long(strings.size()));
-    assertEquals(jedis.scard(key2), new Long(strings.size()));
+    assertThat(jedis.scard(key1)).isEqualTo(strings.size());
+    assertThat(jedis.scard(key2)).isEqualTo(strings.size());
 
     pool.shutdown();
   }
@@ -161,7 +158,7 @@ public class SetsJUnitTest {
     }
   }
 
-  private int doABunchOfSadds(String key, String[] strings,
+  private int doABunchOfSAdds(String key, String[] strings,
       Jedis jedis) {
     int successes = 0;
 
@@ -189,12 +186,16 @@ public class SetsJUnitTest {
 
     Set<String> returnedSet = jedis.smembers(key);
 
-    assertEquals(returnedSet, new HashSet<String>(strings));
+    assertThat(returnedSet).isEqualTo(strings);
 
     for (String entry : strings) {
-      boolean exists = jedis.sismember(key, entry);
-      assertTrue(exists);
+      assertThat(jedis.sismember(key, entry)).isTrue();
     }
+
+    assertThat(jedis.smembers("doesNotExist")).isEmpty();
+
+    assertThat(jedis.sismember("nonExistentKey", "nonExistentMember")).isFalse();
+    assertThat(jedis.sismember(key, "nonExistentMember")).isFalse();
   }
 
   @Test
@@ -211,21 +212,30 @@ public class SetsJUnitTest {
     long i = 1;
     for (String entry : strings) {
       long results = jedis.smove(source, dest, entry);
-      assertTrue("results:" + results + " == 1", results == 1);
-      assertTrue(jedis.sismember(dest, entry));
+      assertThat(results).isEqualTo(1);
+      assertThat(jedis.sismember(dest, entry)).isTrue();
 
       results = jedis.scard(source);
-      assertTrue(results + " == " + (strings.size() - i), results == strings.size() - i);
-      assertTrue(jedis.scard(dest) == i);
+      assertThat(results).isEqualTo(strings.size() - i);
+      assertThat(jedis.scard(dest)).isEqualTo(i);
       i++;
     }
 
-    assertTrue(jedis.smove(test, dest, generator.generate('x')) == 0);
+    assertThat(jedis.smove(test, dest, generator.generate('x'))).isEqualTo(0);
+  }
 
-    jedis.sadd(source, stringArray);
-    String nonexistent = generator.generate('y');
-    assertTrue(jedis.smove(source, dest, nonexistent) == 0);
-    assertFalse(jedis.sismember(dest, nonexistent));
+  @Test
+  public void testSMoveNegativeCases() {
+    String source = "source";
+    String dest = "dest";
+    jedis.sadd(source, "sourceField");
+    jedis.sadd(dest, "destField");
+    String nonexistentField = "nonexistentField";
+
+    assertThat(jedis.smove(source, dest, nonexistentField)).isEqualTo(0);
+    assertThat(jedis.sismember(dest, nonexistentField)).isFalse();
+    assertThat(jedis.smove(source, "nonexistentDest", nonexistentField)).isEqualTo(0);
+    assertThat(jedis.smove("nonExistentSource", dest, nonexistentField)).isEqualTo(0);
   }
 
   @Test
@@ -693,7 +703,9 @@ public class SetsJUnitTest {
     jedis.sadd("master", "field1", "field2");
 
     Long sremCount = jedis.srem("master", "field1", "field2", "unknown");
+    Set<String> sremSet = jedis.smembers("master");
     assertThat(sremCount).isEqualTo(2);
+    assertThat(sremSet).isEmpty();
 
     sremCount = jedis.srem("master", "field1", "field2", "unknown");
     assertThat(sremCount).isEqualTo(0);
@@ -718,6 +730,7 @@ public class SetsJUnitTest {
     Runnable runnable1 = () -> {
       for (int i = 0; i < ENTRIES; i++) {
         sremmed1.addAndGet(jedis.srem("master", masterSet.get(i)));
+        Thread.yield();
       }
     };
 
@@ -725,6 +738,7 @@ public class SetsJUnitTest {
     Runnable runnable2 = () -> {
       for (int i = 0; i < ENTRIES; i++) {
         sremmed2.addAndGet(jedis2.srem("master", masterSet.get(i)));
+        Thread.yield();
       }
     };
 
@@ -737,8 +751,6 @@ public class SetsJUnitTest {
     thread2.join();
 
     assertThat(jedis.smembers("master")).isEmpty();
-
     assertThat(sremmed1.get() + sremmed2.get()).isEqualTo(ENTRIES);
   }
-
 }

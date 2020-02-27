@@ -17,8 +17,6 @@ package org.apache.geode.redis.internal.executor.set;
 import java.util.List;
 import java.util.Set;
 
-import org.apache.geode.cache.CacheLoaderException;
-import org.apache.geode.cache.CacheWriterException;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.TimeoutException;
 import org.apache.geode.redis.internal.AutoCloseableLock;
