@@ -120,7 +120,7 @@ public class RegionProvider implements Closeable {
     this.stringsRegion = stringsRegion;
     this.hLLRegion = hLLRegion;
     this.keyRegistrar = redisMetaRegion;
-    this.cache = GemFireCacheImpl.getInstance();
+    this.cache = cache;
     this.queryService = cache.getQueryService();
     this.expirationsMap = expirationsMap;
     this.expirationExecutor = expirationExecutor;

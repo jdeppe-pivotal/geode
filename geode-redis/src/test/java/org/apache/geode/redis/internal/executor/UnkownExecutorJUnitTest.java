@@ -15,46 +15,37 @@
  */
 package org.apache.geode.redis.internal.executor;
 
-import static org.junit.Assert.assertFalse;
-
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import org.apache.geode.redis.internal.Coder;
+import org.apache.geode.redis.internal.Command;
 import org.apache.geode.redis.internal.ExecutionHandlerContext;
-import org.apache.geode.redis.internal.RedisDataType;
-import org.apache.geode.redis.internal.RegionProvider;
-import org.apache.geode.redis.internal.executor.string.SetExecutor;
 
 /**
- * Test for AbstractExecutor
+ * Test for the UnkownExecutor
  *
  *
  */
-public class AbstractExecutorTest {
-
+public class UnkownExecutorJUnitTest {
   /**
-   * Test the remove entry mehtod
+   * Test the execution method
    */
   @Test
-  public void testRemoveEntry() {
-    // Create any instance of the AbstractExecutor
-    AbstractExecutor abstractExecutor = new SetExecutor();
+  public void testExecuteCommand() {
+    UnkownExecutor exe = new UnkownExecutor();
 
-    // setup mocks
+    Command command = Mockito.mock(Command.class);
     ExecutionHandlerContext context = Mockito.mock(ExecutionHandlerContext.class);
-    RegionProvider rp = Mockito.mock(RegionProvider.class);
-    Mockito.when(context.getRegionProvider()).thenReturn(rp);
-    Mockito.when(rp.removeKey(Mockito.any())).thenReturn(true);
-
-    // Assert false to protected or null types
-    assertFalse(abstractExecutor.removeEntry(Coder.stringToByteArrayWrapper("junit"),
-        RedisDataType.REDIS_PROTECTED, context));
-
-    assertFalse(
-        abstractExecutor.removeEntry(Coder.stringToByteArrayWrapper("junit"), null, context));
 
 
+    UnpooledByteBufAllocator byteBuf = new UnpooledByteBufAllocator(false);
+    Mockito.when(context.getByteBufAllocator()).thenReturn(byteBuf);
+
+    exe.executeCommand(command, context);
+
+    // verify the response was set
+    Mockito.verify(command).setResponse(Mockito.any());
 
   }
 

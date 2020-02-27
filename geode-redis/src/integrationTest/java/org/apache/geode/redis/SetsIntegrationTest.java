@@ -45,7 +45,7 @@ import org.apache.geode.management.internal.cli.util.ThreePhraseGenerator;
 import org.apache.geode.test.junit.categories.RedisTest;
 
 @Category({RedisTest.class})
-public class SetsJUnitTest {
+public class SetsIntegrationTest {
   private static Jedis jedis;
   private static GeodeRedisServer server;
   private static GemFireCache cache;

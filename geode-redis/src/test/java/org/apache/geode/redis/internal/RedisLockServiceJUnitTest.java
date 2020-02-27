@@ -29,7 +29,7 @@ import org.apache.geode.cache.TimeoutException;
 /**
  * Test cases for the Redis lock service
  */
-public class RedisLockServiceTest {
+public class RedisLockServiceJUnitTest {
   /**
    * Test lock method
    *
@@ -43,8 +43,8 @@ public class RedisLockServiceTest {
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> lockService.lock(null));
 
-    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[]{97, 98, 99});
-    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[]{97, 98, 99});
+    ByteArrayWrapper key1 = new ByteArrayWrapper(new byte[] {97, 98, 99});
+    ByteArrayWrapper key2 = new ByteArrayWrapper(new byte[] {97, 98, 99});
     CountDownLatch latch = new CountDownLatch(1);
 
     // test locks across threads
@@ -87,13 +87,13 @@ public class RedisLockServiceTest {
     RedisLockService lockService1 = new RedisLockService();
     RedisLockService lockService2 = new RedisLockService();
 
-    ByteArrayWrapper key = new ByteArrayWrapper(new byte[]{2});
+    ByteArrayWrapper key = new ByteArrayWrapper(new byte[] {2});
     CountDownLatch latch = new CountDownLatch(1);
     // test locks across threads
     Thread t1 = new Thread(() -> {
 
       try {
-        AutoCloseableLock autoLock = lockService1.lock(new ByteArrayWrapper(new byte[]{2}));
+        AutoCloseableLock autoLock = lockService1.lock(new ByteArrayWrapper(new byte[] {2}));
         latch.await();
         autoLock.close();
       } catch (Exception e) {
@@ -123,7 +123,7 @@ public class RedisLockServiceTest {
   public void testGetLock() throws InterruptedException {
     RedisLockService lockService = new RedisLockService();
 
-    ByteArrayWrapper obj = new ByteArrayWrapper(new byte[]{1});
+    ByteArrayWrapper obj = new ByteArrayWrapper(new byte[] {1});
 
     AutoCloseableLock autoLock = lockService.lock(obj);
     assertThat(lockService.getMapSize()).isEqualTo(1);
@@ -144,12 +144,12 @@ public class RedisLockServiceTest {
   public void testGetLockTwice() throws InterruptedException {
     RedisLockService lockService = new RedisLockService();
 
-    ByteArrayWrapper obj1 = new ByteArrayWrapper(new byte[]{77});
+    ByteArrayWrapper obj1 = new ByteArrayWrapper(new byte[] {77});
     AutoCloseableLock lock1 = lockService.lock(obj1);
 
     assertThat(lockService.getMapSize()).isEqualTo(1);
 
-    ByteArrayWrapper obj2 = new ByteArrayWrapper(new byte[]{77});
+    ByteArrayWrapper obj2 = new ByteArrayWrapper(new byte[] {77});
     AutoCloseableLock lock2 = lockService.lock(obj2);
 
     assertThat(lockService.getMapSize()).isEqualTo(1);

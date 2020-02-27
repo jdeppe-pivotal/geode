@@ -15,8 +15,7 @@
  */
 package org.apache.geode.redis.internal;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.Map;
 import java.util.Set;
@@ -24,7 +23,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -40,7 +38,7 @@ import org.apache.geode.internal.hll.HyperLogLogPlus;
  *
  *
  */
-public class RegionProviderTest {
+public class RegionProviderJUnitTest {
 
   private String NEW_REGION_NM = "NEW_REGION";
 
@@ -87,9 +85,9 @@ public class RegionProviderTest {
    */
   @Test
   public void testGetRegion() {
-    Assert.assertNull(regionProvider.getRegion(null));
+    assertThat(regionProvider.getRegion(null)).isNull();
 
-    Assert.assertNull(regionProvider.getRegion(Coder.stringToByteArrayWrapper("invalid")));
+    assertThat(regionProvider.getRegion(Coder.stringToByteArrayWrapper("invalid"))).isNull();
   }
 
   /**
@@ -99,14 +97,12 @@ public class RegionProviderTest {
   public void testGetOrCreateRegion() {
     Region<?, ?> region = regionProvider.getOrCreateRegion(
         Coder.stringToByteArrayWrapper(NEW_REGION_NM), RedisDataType.REDIS_HASH, context);
-    assertNotNull(region);
+    assertThat(region).isNotNull();
 
     Region<?, ?> sameregion =
         regionProvider.getRegion(Coder.stringToByteArrayWrapper(NEW_REGION_NM));
-    assertNotNull(region);
+    assertThat(region).isNotNull();
 
-    assertTrue(sameregion == region);
-
+    assertThat(sameregion).isSameAs(region);
   }
-
 }

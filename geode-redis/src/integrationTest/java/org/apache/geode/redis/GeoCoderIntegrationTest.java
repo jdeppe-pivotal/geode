@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.apache.geode.redis.internal.CoderException;
 import org.apache.geode.redis.internal.GeoCoder;
 
-public class GeoCoderTest {
+public class GeoCoderIntegrationTest {
   @Test
   public void testGeoHash() throws CoderException {
     String hash = GeoCoder.geohash(Double.toString(13.361389).getBytes(),

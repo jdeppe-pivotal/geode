@@ -29,7 +29,7 @@ import org.apache.geode.redis.GeodeRedisServer;
 /**
  * Test cases for ExecutionHandlerContext
  */
-public class ExecutionHandlerContextTest {
+public class ExecutionHandlerContextJUnitTest {
   /**
    *
    * @throws Exception the exception

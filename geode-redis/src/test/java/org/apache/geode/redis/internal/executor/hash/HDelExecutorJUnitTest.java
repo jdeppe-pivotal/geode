@@ -27,7 +27,7 @@ import org.apache.geode.redis.internal.ExecutionHandlerContext;
  *
  *
  */
-public class HDelExecutorTest {
+public class HDelExecutorJUnitTest {
   /**
    * Test the execute command method
    */

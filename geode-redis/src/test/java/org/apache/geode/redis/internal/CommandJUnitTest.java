@@ -29,7 +29,7 @@ import org.junit.Test;
  *
  *
  */
-public class CommandTest {
+public class CommandJUnitTest {
 
   /**
    * Test method for {@link org.apache.geode.redis.internal.Command#Command(java.util.List)}.

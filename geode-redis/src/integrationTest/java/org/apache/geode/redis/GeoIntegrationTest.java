@@ -46,7 +46,7 @@ import org.apache.geode.redis.internal.ByteArrayWrapper;
 import org.apache.geode.test.junit.categories.RedisTest;
 
 @Category({RedisTest.class})
-public class GeoJUnitTest {
+public class GeoIntegrationTest {
   private static Jedis jedis;
   private static GeodeRedisServer server;
   private static GemFireCache cache;

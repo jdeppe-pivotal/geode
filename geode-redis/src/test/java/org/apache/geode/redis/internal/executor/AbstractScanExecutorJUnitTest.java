@@ -27,7 +27,7 @@ import org.junit.experimental.categories.Category;
 import org.apache.geode.test.junit.categories.RedisTest;
 
 @Category({RedisTest.class})
-public class AbstractScanExecutorTest {
+public class AbstractScanExecutorJUnitTest {
 
   @Test
   public void shouldBeMockable() throws Exception {
