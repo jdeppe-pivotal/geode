@@ -69,6 +69,13 @@ public class SetsJUnitTest {
     jedis = new Jedis("localhost", port, 10000000);
   }
 
+  @AfterClass
+  public static void tearDown() {
+    jedis.close();
+    cache.close();
+    server.shutdown();
+  }
+
   @After
   public void cleanup() {
     jedis.flushAll();
@@ -640,15 +647,44 @@ public class SetsJUnitTest {
     assertThat(jedis.spop("master")).isNull();
   }
 
-  @After
-  public void flushAll() {
-    jedis.flushAll();
+  @Test
+  public void testConcurrentSPops() throws InterruptedException {
+    Jedis jedis2 = new Jedis("localhost", port, 100000);
+    int ENTRIES = 1000;
+
+    List<String> masterSet = new ArrayList<>();
+    for (int i = 0; i < ENTRIES; i++) {
+      masterSet.add("master-" + i);
+    }
+
+    jedis.sadd("master", masterSet.toArray(new String[] {}));
+
+    List<String> popped1 = new ArrayList<>();
+    Runnable runnable1 = () -> {
+      for (int i = 0; i < ENTRIES / 2; i++) {
+        popped1.add(jedis.spop("master"));
+      }
+    };
+
+    List<String> popped2 = new ArrayList<>();
+    Runnable runnable2 = () -> {
+      for (int i = 0; i < ENTRIES / 2; i++) {
+        popped2.add(jedis2.spop("master"));
+      }
+    };
+
+    Thread thread1 = new Thread(runnable1);
+    Thread thread2 = new Thread(runnable2);
+
+    thread1.start();
+    thread2.start();
+    thread1.join();
+    thread2.join();
+
+    assertThat(jedis.smembers("master")).isEmpty();
+
+    popped1.addAll(popped2);
+    assertThat(popped1.toArray()).containsExactlyInAnyOrder(masterSet.toArray());
   }
 
-  @AfterClass
-  public static void tearDown() {
-    jedis.close();
-    cache.close();
-    server.shutdown();
-  }
 }
