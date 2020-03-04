@@ -64,7 +64,7 @@ public class HashesIntegrationTest {
   private static GemFireCache cache;
   private static Random rand;
   private static int port = 6379;
-  private static int ITERATION_COUNT = 4000;
+  private static int ITERATION_COUNT = 10000;
 
   @BeforeClass
   public static void setUp() throws IOException {
