@@ -555,11 +555,10 @@ public class HashesIntegrationTest {
       Jedis jedis, CountDownLatch latch) throws InterruptedException {
     int successes = 0;
 
-    // latch.await();
+    latch.await();
     for (int i = 0; i < ITERATION_COUNT; i++) {
       if (jedis.hsetnx(key, fields.get(i), fieldValue) == 1) {
         successes++;
-        // Thread.sleep(randSleepMillis());
         Thread.yield();
       }
     }
