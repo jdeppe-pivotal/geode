@@ -740,9 +740,9 @@ public class ConnectionTable {
    *
    * @param beingSick a test hook to simulate a sick process
    */
-  protected void closeReceivers(boolean beingSick) {
-    synchronized (this.receivers) {
-      for (Iterator it = this.receivers.iterator(); it.hasNext();) {
+  void closeReceivers(boolean beingSick) {
+    synchronized (receivers) {
+      for (Iterator it = receivers.iterator(); it.hasNext();) {
         Connection con = (Connection) it.next();
         if (!beingSick || con.preserveOrder) {
           closeCon(

@@ -368,6 +368,9 @@ public class Connection implements Runnable {
   /** the buffer used for message receipt */
   private ByteBuffer inputBuffer;
 
+  /** Lock used to protect the input buffer */
+  public final Object inputBufferLock = new Object();
+
   /** the length of the next message to be dispatched */
   private int messageLength;
 
@@ -396,6 +399,7 @@ public class Connection implements Runnable {
 
   private boolean directAck;
 
+  private boolean asyncMode;
 
   /** is this connection used for serial message delivery? */
   boolean preserveOrder = false;
@@ -1121,11 +1125,12 @@ public class Connection implements Runnable {
     this.owner = t;
     this.sharedResource = sharedResource;
     this.preserveOrder = preserveOrder;
-    setRemoteAddr(remoteAddr);
-    this.conduitIdStr = this.owner.getConduit().getSocketId().toString();
-    this.handshakeRead = false;
-    this.handshakeCancelled = false;
-    this.connected = true;
+    setRemoteAddr(remoteID);
+    conduitIdStr = owner.getConduit().getSocketId().toString();
+    handshakeRead = false;
+    handshakeCancelled = false;
+    connected = true;
+    asyncMode = false;
 
     this.uniqueId = idCounter.getAndIncrement();
 
@@ -1607,7 +1612,11 @@ public class Connection implements Runnable {
           this.conduit.getStats().incThreadOwnedReceivers(-1L, dominoCount.get());
         }
         asyncClose(false);
-        this.owner.removeAndCloseThreadOwnedSockets();
+        owner.removeAndCloseThreadOwnedSockets();
+      } else {
+        if (sharedResource && !asyncMode) {
+          asyncClose(false);
+        }
       }
       releaseInputBuffer();
 
@@ -1624,11 +1633,12 @@ public class Connection implements Runnable {
   }
 
   private void releaseInputBuffer() {
-    ByteBuffer tmp = this.inputBuffer;
-    if (tmp != null) {
-      this.inputBuffer = null;
-      final DMStats stats = this.owner.getConduit().getStats();
-      getBufferPool().releaseReceiveBuffer(tmp);
+    synchronized (inputBufferLock) {
+      ByteBuffer tmp = inputBuffer;
+      if (tmp != null) {
+        inputBuffer = null;
+        getBufferPool().releaseReceiveBuffer(tmp);
+      }
     }
   }
 
@@ -1758,10 +1768,9 @@ public class Connection implements Runnable {
             }
             return;
           }
-
           processInputBuffer();
 
-          if (!this.isReceiver && (this.handshakeRead || this.handshakeCancelled)) {
+          if (!isHandShakeReader && !isReceiver && (handshakeRead || handshakeCancelled)) {
             if (logger.isDebugEnabled()) {
               if (this.handshakeRead) {
                 logger.debug("handshake has been read {}", this);
@@ -1770,8 +1779,13 @@ public class Connection implements Runnable {
               }
             }
             isHandShakeReader = true;
-            // Once we have read the handshake the reader can go away
-            break;
+
+            // Once we have read the handshake for unshared connections, the reader can skip
+            // processing messages
+            if (!sharedResource || asyncMode) {
+              break;
+            }
+
           }
         } catch (CancelException e) {
           if (logger.isDebugEnabled()) {
@@ -1831,7 +1845,7 @@ public class Connection implements Runnable {
         }
       } // for
     } finally {
-      if (!isHandShakeReader) {
+      if (!isHandShakeReader || (sharedResource && !asyncMode)) {
         synchronized (stateLock) {
           connectionState = STATE_IDLE;
         }
@@ -3335,6 +3349,10 @@ public class Connection implements Runnable {
           this.remoteVersion = Version.readVersion(dis, true);
           ioFilter.doneReading(peerDataBuffer);
           notifyHandshakeWaiter(true);
+          if (preserveOrder && asyncDistributionTimeout != 0) {
+            asyncMode = true;
+          }
+
           return;
         default:
           String err =

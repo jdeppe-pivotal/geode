@@ -638,7 +638,7 @@ public class TCPConduit implements Runnable {
   }
 
   ConnectionTable getConTable() {
-    ConnectionTable result = this.conTable;
+    ConnectionTable result = conTable;
     if (result == null) {
       stopper.checkCancelInProgress(null);
       throw new DistributedSystemDisconnectedException(
