@@ -46,7 +46,7 @@ while getopts ":f:c:h:p:n:" opt; do
   esac
 done
 
-REDIS_BENCHMARK_COMMANDS=("SET" "GET" "INCR" "MSET")
+REDIS_BENCHMARK_COMMANDS=("HSET" "SPOP" "LPOP" "RPOP" "LPUSH" "RPUSH" "SADD" "LRANGE_100")
 
 rm -rf grbench-tmpdir
 mkdir grbench-tmpdir

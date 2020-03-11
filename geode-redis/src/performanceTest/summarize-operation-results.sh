@@ -16,8 +16,14 @@
 REDIS_HOST=localhost
 REDIS_PORT=6379
 
-while getopts ":" opt; do
+while getopts ":o:f:" opt; do
   case ${opt} in
+  o)
+    OPERATION=${OPTARG}
+    ;;
+  f)
+    FILENAME=${OPTARG}
+    ;;
   \?)
     echo "Usage: ${0}"
     ;;
@@ -29,17 +35,22 @@ while getopts ":" opt; do
 done
 
 COMMAND=""
-RPS=$(grep "requests per second" $1 | cut -d" " -f 1)
+RPS=""
 
 MINIMUM=1000000
 NINETY_FIVE=0
 ONE_HUNDRED=0
 
-input="$1"
+input="${FILENAME}"
 while IFS= read -r line; do
   if [ "${COMMAND}" == "" ]; then
+    echo $line | grep ${OPERATION} >/dev/null
+    if [ $? -eq 0 ]; then
+      continue
+    fi
     COMMAND=$(echo "$line" | cut -d":" -f 1)
   fi
+
   echo "$line" | grep "\%" >/dev/null
   if [ $? -eq 0 ]; then
     CURRENT_VAL=$(echo "$line" | cut -d" " -f 3)
@@ -56,6 +67,16 @@ while IFS= read -r line; do
       ONE_HUNDRED=$(echo "$line" | cut -d" " -f 3)
     fi
   fi
+
+  echo "$line" | grep "requests per second" >/dev/null
+  if [ $? -eq 0 ]; then
+    RPS=$(echo "$line" | cut -d" " -f 1)
+  fi
 done <"$input"
+
+if [ -z "${RPS}" ]; then
+  echo "Unable to find line containing 'requests per second'"
+  exit 1
+fi
 
 echo ${COMMAND}","${MINIMUM}","${NINETY_FIVE}","${ONE_HUNDRED}","${RPS}

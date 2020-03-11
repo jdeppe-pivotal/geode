@@ -54,6 +54,6 @@ fi
 rm -rf grbench-tmpdir/${UNIQUE_NAME}-operation-results.txt
 
 redis-benchmark -h ${REDIS_HOST} -p ${REDIS_PORT} -t ${OPERATION} -n ${COMMAND_REPETITION_COUNT} -r 32767 >> grbench-tmpdir/${UNIQUE_NAME}-operation-results.txt
-./summarize-operation-results.sh grbench-tmpdir/${UNIQUE_NAME}-operation-results.txt >> grbench-tmpdir/${UNIQUE_NAME}-run-results.csv
+./summarize-operation-results.sh -o ${OPERATION} -f grbench-tmpdir/${UNIQUE_NAME}-operation-results.txt >> grbench-tmpdir/${UNIQUE_NAME}-run-results.csv
 
 rm -rf grbench-tmpdir/${UNIQUE_NAME}-operation-results.txt
