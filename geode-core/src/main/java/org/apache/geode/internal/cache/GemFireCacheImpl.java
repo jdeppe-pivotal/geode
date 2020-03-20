@@ -3681,7 +3681,7 @@ public class GemFireCacheImpl implements InternalCache, InternalClientCache, Has
       if (ccpTimer != null) {
         return ccpTimer;
       }
-      ccpTimer = new SystemTimer(getDistributedSystem(), true);
+      ccpTimer = new SystemTimer(getDistributedSystem());
       if (isClosing) {
         ccpTimer.cancel(); // poison it, don't throw.
       }

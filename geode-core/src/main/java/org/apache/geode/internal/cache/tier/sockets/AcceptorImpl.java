@@ -480,7 +480,7 @@ public class AcceptorImpl implements Acceptor, Runnable {
         tmp_q = new LinkedBlockingQueue<>();
         tmp_commQ = new LinkedBlockingQueue<>();
         tmp_hs = new HashSet<>(512);
-        tmp_timer = new SystemTimer(internalCache.getDistributedSystem(), true);
+        tmp_timer = new SystemTimer(internalCache.getDistributedSystem());
       }
       selector = tmp_s;
       selectorQueue = tmp_q;

@@ -204,7 +204,7 @@ public class ConnectionTable {
   private ConnectionTable(TCPConduit conduit) throws IOException {
     this.owner = conduit;
     this.idleConnTimer = (this.owner.idleConnectionTimeout != 0)
-        ? new SystemTimer(conduit.getDM().getSystem(), true) : null;
+        ? new SystemTimer(conduit.getDM().getSystem()) : null;
     this.threadOrderedConnMap = new ThreadLocal();
     this.threadConnMaps = new ArrayList();
     this.threadConnectionMap = new ConcurrentHashMap();
@@ -550,8 +550,12 @@ public class ConnectionTable {
           if (!this.closed) {
             IdleConnTT task = new IdleConnTT(conn);
             conn.setIdleTimeoutTask(task);
-            this.getIdleConnTimer().scheduleAtFixedRate(task, this.owner.idleConnectionTimeout,
-                this.owner.idleConnectionTimeout);
+            synchronized (task) {
+              if (!task.isCancelled()) {
+                getIdleConnTimer().scheduleAtFixedRate(task, owner.idleConnectionTimeout,
+                    owner.idleConnectionTimeout);
+              }
+            }
           }
         }
       } catch (IllegalStateException e) {
@@ -654,8 +658,8 @@ public class ConnectionTable {
     if (this.closed) {
       return null;
     }
-    if (this.idleConnTimer == null) {
-      this.idleConnTimer = new SystemTimer(getDM().getSystem(), true);
+    if (idleConnTimer == null) {
+      idleConnTimer = new SystemTimer(getDM().getSystem());
     }
     return this.idleConnTimer;
   }
@@ -1284,25 +1288,25 @@ public class ConnectionTable {
 
   private static class IdleConnTT extends SystemTimer.SystemTimerTask {
 
-    private Connection c;
+    private Connection connection;
 
-    IdleConnTT(Connection c) {
-      this.c = c;
+    private IdleConnTT(Connection c) {
+      this.connection = c;
     }
 
     @Override
     public boolean cancel() {
-      Connection con = this.c;
+      Connection con = connection;
       if (con != null) {
         con.cleanUpOnIdleTaskCancel();
       }
-      this.c = null;
+      connection = null;
       return super.cancel();
     }
 
     @Override
     public void run2() {
-      Connection con = this.c;
+      Connection con = connection;
       if (con != null) {
         if (con.checkForIdleTimeout()) {
           cancel();

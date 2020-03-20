@@ -972,7 +972,7 @@ public class GMSMembershipManager implements MembershipManager, Manager {
       return;
     }
     DistributedSystem ds = this.listener.getDM().getSystem();
-    this.cleanupTimer = new SystemTimer(ds, true);
+    this.cleanupTimer = new SystemTimer(ds);
     SystemTimer.SystemTimerTask st = new SystemTimer.SystemTimerTask() {
       @Override
       public void run2() {
