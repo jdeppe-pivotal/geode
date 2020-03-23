@@ -171,14 +171,22 @@ public class RedisLockServiceJUnitTest {
   }
 
   @Test
-  public void lockingDoesNotCauseConcurrentModificationExceptions()
+  public void lockingDoesNotCauseAnyExceptions()
       throws ExecutionException, InterruptedException {
 
-    int ITERATIONS = 10000;
+    int ITERATIONS = 100000;
     RedisLockService lockService = new RedisLockService();
 
     ExecutorService pool = Executors.newFixedThreadPool(5);
-    Callable<Void> callable = () -> {
+    Callable<Void> callable1 = () -> {
+      ByteArrayWrapper key = new ByteArrayWrapper("key".getBytes());
+      for (int i = 0; i < ITERATIONS; i++) {
+        lockService.lock(key).close();
+      }
+      return null;
+    };
+
+    Callable<Void> callable2 = () -> {
       ByteArrayWrapper key = new ByteArrayWrapper("key".getBytes());
       for (int i = 0; i < ITERATIONS; i++) {
         lockService.lock(key).close();
@@ -201,11 +209,14 @@ public class RedisLockServiceJUnitTest {
       return null;
     };
 
-    Future<Void> future1 = pool.submit(callable);
-    Future<Void> future2 = pool.submit(lockMaker);
+    Future<Void> future1 = pool.submit(callable1);
+    Future<Void> future2 = pool.submit(callable2);
+    pool.submit(lockMaker);
     pool.submit(garbageCollection);
 
-    // The test passes if this does not throw an exception
+    // The test passes if these do not throw an exceptions
     future1.get();
+    future2.get();
   }
+
 }

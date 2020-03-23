@@ -15,12 +15,14 @@
  */
 package org.apache.geode.redis.internal;
 
-import java.util.Collections;
-import java.util.Map;
 import java.util.WeakHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 
 import org.apache.geode.cache.TimeoutException;
 
@@ -31,8 +33,7 @@ public class RedisLockService implements RedisLockServiceMBean {
 
   private static final int DEFAULT_TIMEOUT = 1000;
   private final int timeoutMS;
-  private final Map<KeyHashIdentifier, Lock> weakReferencesTolocks =
-      Collections.synchronizedMap(new WeakHashMap<>());
+  private final LoadingCache<KeyHashIdentifier, Lock> cache;
 
   /**
    * Construct with the default 1000ms timeout setting
@@ -48,11 +49,22 @@ public class RedisLockService implements RedisLockServiceMBean {
    */
   public RedisLockService(int timeoutMS) {
     this.timeoutMS = timeoutMS;
+
+    cache = CacheBuilder.newBuilder()
+        .weakValues()
+        .recordStats()
+        .build(new CacheLoader<KeyHashIdentifier, Lock>() {
+          @Override
+          public Lock load(KeyHashIdentifier key) throws Exception {
+            return new MarkerReentrantLock();
+          }
+        });
   }
 
   @Override
   public int getLockCount() {
-    return weakReferencesTolocks.size();
+    cache.cleanUp();
+    return (int) (cache.stats().loadCount() - cache.stats().evictionCount());
   }
 
   /**
@@ -72,39 +84,16 @@ public class RedisLockService implements RedisLockServiceMBean {
     }
 
     KeyHashIdentifier lockKey = new KeyHashIdentifier(key.toBytes());
-    KeyHashIdentifier referencedKey = lockKey;
 
-    Lock lock = new ReentrantLock();
-    do {
-      Lock oldLock = weakReferencesTolocks.putIfAbsent(lockKey, lock);
-
-      if (oldLock != null) {
-        lock = oldLock;
-
-        // we need to get a reference to the actual key object
-        // so that the backing WeakHashMap does not clean it up
-        // when garbage collection happens.
-        referencedKey = getReferenceToLockKey(lockKey);
-      }
-    } while (referencedKey == null);
+    Lock lock = cache.getUnchecked(lockKey);
 
     if (!lock.tryLock(timeoutMS, TimeUnit.MILLISECONDS)) {
       throw new TimeoutException("Couldn't get lock for " + lockKey.toString());
     }
 
-    return new AutoCloseableLock(referencedKey, lock);
+    return new AutoCloseableLock(lockKey, lock);
   }
 
-  private KeyHashIdentifier getReferenceToLockKey(KeyHashIdentifier lockKey) {
-    synchronized (weakReferencesTolocks) {
-      for (KeyHashIdentifier keyInSet : weakReferencesTolocks.keySet()) {
-        if (keyInSet.equals(lockKey)) {
-          return keyInSet;
-        }
-      }
-    }
-
-    return null;
+  public static class MarkerReentrantLock extends ReentrantLock {
   }
-
 }
