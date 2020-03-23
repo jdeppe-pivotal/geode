@@ -139,6 +139,9 @@ public class HIncrByExecutor extends HashExecutor {
       command.setResponse(Coder.getErrorResponse(context.getByteBufAllocator(),
           "Timeout acquiring lock. Please try again."));
       return;
+    } catch (Exception e) {
+      System.err.println("BANG!!!!");
+      throw e;
     }
     command.setResponse(Coder.getIntegerResponse(context.getByteBufAllocator(), value));
 

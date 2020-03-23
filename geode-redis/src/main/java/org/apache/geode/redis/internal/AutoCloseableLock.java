@@ -21,16 +21,19 @@ import java.util.concurrent.locks.Lock;
  * Created by gosullivan on 3/10/17.
  */
 public class AutoCloseableLock implements AutoCloseable {
-  private final Lock lock;
   private final KeyHashIdentifier key;
+  private final RedisLockService redisLockService;
+  private final Lock lock;
 
-  public AutoCloseableLock(KeyHashIdentifier key, Lock lock) {
+  public AutoCloseableLock(KeyHashIdentifier key, Lock lock, RedisLockService lockService) {
     this.key = key;
+    this.redisLockService = lockService;
     this.lock = lock;
   }
 
   @Override
   public void close() {
     lock.unlock();
+    redisLockService.unlock(key);
   }
 }

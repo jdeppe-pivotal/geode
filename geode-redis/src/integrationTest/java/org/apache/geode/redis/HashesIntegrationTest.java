@@ -71,7 +71,7 @@ public class HashesIntegrationTest {
     rand = new Random();
     CacheFactory cf = new CacheFactory();
     // cf.set("log-file", "redis.log");
-    cf.set(LOG_LEVEL, "error");
+    cf.set(LOG_LEVEL, "warn");
     cf.set(MCAST_PORT, "0");
     cf.set(LOCATORS, "");
     cache = cf.create();
@@ -634,7 +634,8 @@ public class HashesIntegrationTest {
 
   private void doABunchOfHIncrs(String key, String field, int incrCount, Jedis jedis) {
     for (int i = 0; i < incrCount; i++) {
-      jedis.hincrBy(key, field, 1);
+      Long result = jedis.hincrBy(key, field, 1);
+      System.err.println(result);
     }
   }
 

@@ -67,4 +67,10 @@ public class KeyHashIdentifier {
     return this.hashCode == otherKey.hashCode;
   }
 
+  @Override
+  public String toString() {
+    return "KeyHashIdentifier{" +
+        "hashCode=" + hashCode +
+        '}';
+  }
 }

@@ -20,9 +20,10 @@ import static org.apache.geode.test.awaitility.GeodeAwaitility.await;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -172,40 +173,57 @@ public class RedisLockServiceJUnitTest {
 
   @Test
   public void lockingDoesNotCauseConcurrentModificationExceptions()
-      throws ExecutionException, InterruptedException {
+      throws InterruptedException {
 
-    int ITERATIONS = 10000;
+    int ITERATIONS = 100_000;
     RedisLockService lockService = new RedisLockService();
 
-    ExecutorService pool = Executors.newFixedThreadPool(5);
-    Callable<Void> callable = () -> {
-      ByteArrayWrapper key = new ByteArrayWrapper("key".getBytes());
-      for (int i = 0; i < ITERATIONS; i++) {
+    ExecutorService pool = Executors.newFixedThreadPool(64);
+
+    testWithSameKey(ITERATIONS, lockService, pool);
+
+    testWithDifferentKeys(ITERATIONS, lockService, pool);
+  }
+
+  private void testWithDifferentKeys(int ITERATIONS, RedisLockService lockService,
+      ExecutorService pool) throws InterruptedException {
+    List<Callable<Integer>> lockMaker = new LinkedList<>();
+    for (int i = 0; i < ITERATIONS; i++) {
+      lockMaker.add(createLockCallable(lockService, "key-" + i));
+    }
+    List<Future<Integer>> future2 = pool.invokeAll(lockMaker);
+    assertThat(future2.stream()
+        .mapToInt(this::safeFutureGet).sum()).isEqualTo(ITERATIONS);
+  }
+
+  private void testWithSameKey(int ITERATIONS, RedisLockService lockService, ExecutorService pool)
+      throws InterruptedException {
+    List<Callable<Integer>> callables = new LinkedList<>();
+    ByteArrayWrapper key = new ByteArrayWrapper("key".getBytes());
+    for (int i = 0; i < ITERATIONS; i++) {
+      callables.add(() -> {
         lockService.lock(key).close();
-      }
-      return null;
+        return 1;
+      });
+    }
+
+    List<Future<Integer>> future1 = pool.invokeAll(callables);
+    assertThat(future1.stream()
+        .mapToInt(this::safeFutureGet).sum()).isEqualTo(ITERATIONS);
+  }
+
+  private Callable<Integer> createLockCallable(RedisLockService lockService, String value) {
+    return () -> {
+      lockService.lock(new ByteArrayWrapper((value).getBytes())).close();
+      return 1;
     };
+  }
 
-    Callable<Void> lockMaker = () -> {
-      for (int i = 0; i < ITERATIONS; i++) {
-        lockService.lock(new ByteArrayWrapper(("key-" + i++).getBytes())).close();
-      }
-      return null;
-    };
-
-    Callable<Void> garbageCollection = () -> {
-      for (int i = 0; i < ITERATIONS / 100; i++) {
-        System.gc();
-        System.runFinalization();
-      }
-      return null;
-    };
-
-    Future<Void> future1 = pool.submit(callable);
-    Future<Void> future2 = pool.submit(lockMaker);
-    pool.submit(garbageCollection);
-
-    // The test passes if this does not throw an exception
-    future1.get();
+  private int safeFutureGet(Future<Integer> future) {
+    try {
+      return future.get();
+    } catch (Exception cause) {
+      throw new RuntimeException("Lock task failed", cause);
+    }
   }
 }

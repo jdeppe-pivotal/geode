@@ -15,12 +15,19 @@
  */
 package org.apache.geode.redis.internal;
 
-import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.commons.pool2.BasePooledObjectFactory;
+import org.apache.commons.pool2.ObjectPool;
+import org.apache.commons.pool2.PoolUtils;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
+import org.apache.commons.pool2.impl.GenericObjectPool;
 
 import org.apache.geode.cache.TimeoutException;
 
@@ -31,8 +38,8 @@ public class RedisLockService implements RedisLockServiceMBean {
 
   private static final int DEFAULT_TIMEOUT = 1000;
   private final int timeoutMS;
-  private final Map<KeyHashIdentifier, Lock> weakReferencesTolocks =
-      Collections.synchronizedMap(new WeakHashMap<>());
+  private final Map<KeyHashIdentifier, Lock> keyTolocks = new ConcurrentHashMap<>();
+  private final ObjectPool<Lock> lockPool;
 
   /**
    * Construct with the default 1000ms timeout setting
@@ -48,16 +55,31 @@ public class RedisLockService implements RedisLockServiceMBean {
    */
   public RedisLockService(int timeoutMS) {
     this.timeoutMS = timeoutMS;
+    this.lockPool = initializeLockPool();
+  }
+
+  private ObjectPool<Lock> initializeLockPool() {
+    try {
+      GenericObjectPool<Lock> genericObjectPool =
+          new GenericObjectPool<>(new RedisLockObjectPoolFactory());
+      // genericObjectPool.setMinIdle(1);
+      // genericObjectPool.setMaxIdle(5);
+      // genericObjectPool.setMaxTotal(100);
+      // genericObjectPool.setMaxWaitMillis(1000);
+      return PoolUtils.synchronizedPool(genericObjectPool);
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   @Override
   public int getLockCount() {
-    return weakReferencesTolocks.size();
+    return keyTolocks.size();
   }
 
   /**
-   * Attempt to obtain a lock against a given key. The actual lock is wrapped in a returned
-   * {@link AutoCloseable}. The lock can be released either by calling {@code close} on the returned
+   * Attempt to obtain a lock against a given key. The actual lock is wrapped in a returned {@link
+   * AutoCloseable}. The lock can be released either by calling {@code close} on the returned
    * object, or when the returned object becomes eligible for garbage collection (since the backing
    * data structure is based on a {@link WeakHashMap}).
    *
@@ -72,39 +94,53 @@ public class RedisLockService implements RedisLockServiceMBean {
     }
 
     KeyHashIdentifier lockKey = new KeyHashIdentifier(key.toBytes());
-    KeyHashIdentifier referencedKey = lockKey;
+    Lock lock = null;
 
-    Lock lock = new ReentrantLock();
-    do {
-      Lock oldLock = weakReferencesTolocks.putIfAbsent(lockKey, lock);
+    Lock oldLock = keyTolocks.get(lockKey);
+    synchronized (this) {
 
       if (oldLock != null) {
         lock = oldLock;
-
-        // we need to get a reference to the actual key object
-        // so that the backing WeakHashMap does not clean it up
-        // when garbage collection happens.
-        referencedKey = getReferenceToLockKey(lockKey);
+      } else {
+        try {
+          lock = lockPool.borrowObject();
+          Lock lock1 = keyTolocks.putIfAbsent(lockKey, lock);
+          if (lock1 != null) {
+            throw new RuntimeException("Panic!!");
+          }
+        } catch (Exception e) {
+          throw new RuntimeException(e);
+        }
       }
-    } while (referencedKey == null);
-
+    }
     if (!lock.tryLock(timeoutMS, TimeUnit.MILLISECONDS)) {
       throw new TimeoutException("Couldn't get lock for " + lockKey.toString());
     }
 
-    return new AutoCloseableLock(referencedKey, lock);
+    return new AutoCloseableLock(lockKey, lock, this);
   }
 
-  private KeyHashIdentifier getReferenceToLockKey(KeyHashIdentifier lockKey) {
-    synchronized (weakReferencesTolocks) {
-      for (KeyHashIdentifier keyInSet : weakReferencesTolocks.keySet()) {
-        if (keyInSet.equals(lockKey)) {
-          return keyInSet;
-        }
+  public void unlock(KeyHashIdentifier key) {
+    Lock lockToReturn = this.keyTolocks.remove(key);
+    if (lockToReturn != null) {
+      try {
+        lockPool.returnObject(lockToReturn);
+      } catch (Exception e) {
+        e.printStackTrace();
       }
     }
-
-    return null;
   }
 
+  private static class RedisLockObjectPoolFactory extends BasePooledObjectFactory<Lock> {
+
+    @Override
+    public Lock create() throws Exception {
+      return new ReentrantLock();
+    }
+
+    @Override
+    public PooledObject<Lock> wrap(Lock lock) {
+      return new DefaultPooledObject<>(lock);
+    }
+  }
 }
