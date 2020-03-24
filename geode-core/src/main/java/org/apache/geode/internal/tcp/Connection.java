@@ -416,6 +416,12 @@ public class Connection implements Runnable {
   private int sendBufferSize = -1;
   private int recvBufferSize = -1;
 
+  /**
+   * a Reader thread for an shared Connection will remain around in order to
+   * ensure that the socket is properly closed.
+   */
+  private volatile boolean hasResidualReaderThread;
+
   private void setSendBufferSize(Socket sock) {
     setSendBufferSize(sock, this.owner.getConduit().tcpBufferSize);
   }
@@ -1471,7 +1477,7 @@ public class Connection implements Runnable {
         }
         // make sure our socket is closed
         asyncClose(false);
-        if (!this.isReceiver) {
+        if (!isReceiver && !hasResidualReaderThread()) {
           // receivers release the input buffer when exiting run(). Senders use the
           // inputBuffer for reading direct-reply responses
           releaseInputBuffer();
@@ -1618,6 +1624,7 @@ public class Connection implements Runnable {
           asyncClose(false);
         }
       }
+
       releaseInputBuffer();
 
       // make sure that if the reader thread exits we notify a thread waiting
@@ -1663,6 +1670,9 @@ public class Connection implements Runnable {
   }
 
   private void readMessages() {
+    if (closing.get()) {
+      return;
+    }
     // take a snapshot of uniqueId to detect reconnect attempts
     SocketChannel channel;
     try {
@@ -1710,8 +1720,7 @@ public class Connection implements Runnable {
     }
     // we should not change the state of the connection if we are a handshake reader thread
     // as there is a race between this thread and the application thread doing direct ack
-    // fix for #40869
-    boolean isHandShakeReader = false;
+    boolean handshakeHasBeenRead = false;
     // if we're using SSL/TLS the input buffer may already have data to process
     boolean skipInitialRead = getInputBuffer().position() > 0;
     boolean isInitialRead = true;
@@ -1770,7 +1779,7 @@ public class Connection implements Runnable {
           }
           processInputBuffer();
 
-          if (!isHandShakeReader && !isReceiver && (handshakeRead || handshakeCancelled)) {
+          if (!handshakeHasBeenRead && !isReceiver && (handshakeRead || handshakeCancelled)) {
             if (logger.isDebugEnabled()) {
               if (this.handshakeRead) {
                 logger.debug("handshake has been read {}", this);
@@ -1778,12 +1787,16 @@ public class Connection implements Runnable {
                 logger.debug("handshake has been cancelled {}", this);
               }
             }
-            isHandShakeReader = true;
+            handshakeHasBeenRead = true;
 
             // Once we have read the handshake for unshared connections, the reader can skip
             // processing messages
             if (!sharedResource || asyncMode) {
               break;
+            } else {
+              // not exiting and not a Reader spawned from a ServerSocket.accept(), so
+              // let's set some state noting that this is happening
+              hasResidualReaderThread = true;
             }
 
           }
@@ -1831,7 +1844,7 @@ public class Connection implements Runnable {
           return;
 
         } catch (Exception e) {
-          this.owner.getConduit().getCancelCriterion().checkCancelInProgress(null); // bug 37101
+          owner.getConduit().getCancelCriterion().checkCancelInProgress(e);
           if (!stopped && !isSocketClosed()) {
             logger.fatal(String.format("%s exception in channel read", p2pReaderName()), e);
           }
@@ -1845,14 +1858,15 @@ public class Connection implements Runnable {
         }
       } // for
     } finally {
-      if (!isHandShakeReader || (sharedResource && !asyncMode)) {
+      hasResidualReaderThread = false;
+      if (!handshakeHasBeenRead || (sharedResource && !asyncMode)) {
         synchronized (stateLock) {
           connectionState = STATE_IDLE;
         }
       }
       if (logger.isDebugEnabled()) {
         logger.debug("readMessages terminated id={} from {} isHandshakeReader={}", conduitIdStr,
-            remoteAddr, isHandShakeReader);
+            remoteAddr, handshakeHasBeenRead);
       }
     }
   }
@@ -3506,6 +3520,15 @@ public class Connection implements Runnable {
    */
   boolean getOriginatedHere() {
     return !this.isReceiver;
+  }
+
+  /**
+   * A shared sender connection will leave a reader thread around to ensure that the
+   * socket is properly closed at this end. When that is the case isResidualReaderThread
+   * will return true.
+   */
+  public boolean hasResidualReaderThread() {
+    return hasResidualReaderThread;
   }
 
   /**
