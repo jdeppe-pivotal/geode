@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,6 +59,7 @@ public class EnsurePrimaryStaysPutDUnitTest {
 
   private static final String KEY = "foo";
   private static final String VALUE = "bar";
+  private static final String REGION = "TEST";
 
   @Before
   public void setup() throws Exception {
@@ -67,7 +69,8 @@ public class EnsurePrimaryStaysPutDUnitTest {
     server2 = cluster.startServerVM(2, cf -> cf.withConnectionToLocator(locatorPort));
 
     gfsh.connectAndVerify(locator);
-    gfsh.executeAndAssertThat("create region --name=TEST --type=PARTITION_REDUNDANT")
+    gfsh.executeAndAssertThat(
+        String.format("create region --name=%s --type=PARTITION_REDUNDANT", REGION))
         .statusIsSuccess();
 
     server1.invoke(() -> FunctionService.registerFunction(new CheckPrimaryBucketFunction()));
@@ -107,7 +110,7 @@ public class EnsurePrimaryStaysPutDUnitTest {
 
       rebalanceRegions(cache, region);
 
-      return PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName();
+      return awaitForPrimary(region);
     });
 
     // who is primary?
@@ -148,6 +151,25 @@ public class EnsurePrimaryStaysPutDUnitTest {
     assertThat(asyncChecking.get())
         .as("CheckPrimaryBucketFunction determined that the primary has moved")
         .isTrue();
+  }
+
+  private static String awaitForPrimary(Region<String, String> region) {
+    String primary;
+    while (true) {
+      primary = PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName();
+      String finalPrimary = primary;
+      try {
+        GeodeAwaitility.await()
+            .during(10, TimeUnit.SECONDS)
+            .atMost(11, TimeUnit.SECONDS)
+            .until(() -> PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName()
+                .equals(finalPrimary));
+        break;
+      } catch (Exception ex) {
+      }
+    }
+
+    return primary;
   }
 
   private static void rebalanceRegions(Cache cache, Region<?, ?> region) {

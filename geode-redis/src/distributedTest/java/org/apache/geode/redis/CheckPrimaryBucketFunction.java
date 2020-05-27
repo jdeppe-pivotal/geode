@@ -19,6 +19,8 @@ package org.apache.geode.redis;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.Logger;
+
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.execute.Function;
 import org.apache.geode.cache.execute.FunctionContext;
@@ -35,6 +37,7 @@ import org.apache.geode.test.awaitility.GeodeAwaitility;
 public class CheckPrimaryBucketFunction implements Function {
   private static final CountDownLatch signalFunctionHasStarted = new CountDownLatch(1);
   private static final CountDownLatch signalPrimaryHasMoved = new CountDownLatch(1);
+  private static final Logger logger = LogService.getLogger();
 
   public static void waitForFunctionToStart() {
     try {
@@ -58,7 +61,7 @@ public class CheckPrimaryBucketFunction implements Function {
     DistributedMember member = context.getCache().getDistributedSystem().getDistributedMember();
 
     if (!isMemberPrimary(regionFunctionContext, key, member)) {
-      LogService.getLogger().error("Member is not primary.");
+      LogService.getLogger().warn("Member is not primary.");
       result.lastResult(false);
       return;
     }
