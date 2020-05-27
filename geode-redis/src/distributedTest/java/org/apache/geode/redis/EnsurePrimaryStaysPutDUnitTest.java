@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,6 +40,7 @@ import org.apache.geode.internal.cache.BucketAdvisor;
 import org.apache.geode.internal.cache.InternalCache;
 import org.apache.geode.internal.cache.PartitionedRegion;
 import org.apache.geode.internal.cache.PartitionedRegionHelper;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.dunit.AsyncInvocation;
 import org.apache.geode.test.dunit.rules.ClusterStartupRule;
@@ -154,22 +156,19 @@ public class EnsurePrimaryStaysPutDUnitTest {
   }
 
   private static String awaitForPrimary(Region<String, String> region) {
-    String primary;
-    while (true) {
-      primary = PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName();
-      String finalPrimary = primary;
-      try {
-        GeodeAwaitility.await()
-            .during(10, TimeUnit.SECONDS)
-            .atMost(11, TimeUnit.SECONDS)
-            .until(() -> PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName()
-                .equals(finalPrimary));
-        break;
-      } catch (Exception ex) {
-      }
-    }
+    AtomicReference<String> lastPrimary =
+        new AtomicReference<>(PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName());
+    GeodeAwaitility.await()
+        .during(10, TimeUnit.SECONDS)
+        .atMost(60, TimeUnit.SECONDS)
+        .until(() -> {
+          String currentPrimary =
+              PartitionRegionHelper.getPrimaryMemberForKey(region, KEY).getName();
+          LogService.getLogger().info("--->>> current primary: " + currentPrimary);
+          return lastPrimary.getAndSet(currentPrimary).equals(currentPrimary);
+        });
 
-    return primary;
+    return lastPrimary.get();
   }
 
   private static void rebalanceRegions(Cache cache, Region<?, ?> region) {
