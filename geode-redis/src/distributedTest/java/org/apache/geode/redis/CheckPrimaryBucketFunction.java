@@ -104,6 +104,9 @@ public class CheckPrimaryBucketFunction implements Function {
     DistributedMember primaryForKey = PartitionRegionHelper
         .getPrimaryMemberForKey(context.getDataSet(), key);
 
+    if (!primaryForKey.equals(member)) {
+      logger.info("--->>> isMemberPrimary failed: {} != {}", primaryForKey, member);
+    }
     return primaryForKey.equals(member);
   }
 

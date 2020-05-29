@@ -3804,6 +3804,10 @@ public class PartitionedRegion extends LocalRegion
       logger.debug("Executing Function: {} setArguments={} on {}", function.getId(),
           execution.getArguments(), targetNode);
     }
+    // TODO: Remove me after debugging
+    logger.info("Executing Function: {} setArguments={} on {}", function.getId(),
+        execution.getArguments(), targetNode);
+
     while (!execution.getFailedNodes().isEmpty()) {
       RetryTimeKeeper retryTime = new RetryTimeKeeper(this.retryTimeout);
       if (execution.getFailedNodes().contains(targetNode.getId())) {

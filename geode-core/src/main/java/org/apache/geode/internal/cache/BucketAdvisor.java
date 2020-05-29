@@ -1680,6 +1680,7 @@ public class BucketAdvisor extends CacheDistributionAdvisor {
         requestPrimaryState(OTHER_PRIMARY_NOT_HOSTING);
       }
     }
+    logger.info("--->>> Setting primary to {}", id);
     primaryMember.set(id);
     everHadPrimary = true;
 
