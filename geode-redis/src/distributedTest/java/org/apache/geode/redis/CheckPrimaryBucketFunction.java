@@ -41,7 +41,9 @@ public class CheckPrimaryBucketFunction implements Function {
 
   public static void waitForFunctionToStart() {
     try {
+      logger.info("--->>> about to signalFunctionHasStarted.await()");
       signalFunctionHasStarted.await();
+      logger.info("--->>> done waiting for signalFunctionHasStarted.await()");
     } catch (InterruptedException e) {
       e.printStackTrace();
     }
