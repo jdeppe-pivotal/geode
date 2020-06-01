@@ -41,7 +41,7 @@ public class CheckPrimaryBucketFunction implements Function {
 
   public static void waitForFunctionToStart() {
     try {
-      logger.info("--->>> about to signalFunctionHasStarted.await()");
+      logger.info("--->>> about to call signalFunctionHasStarted.await()");
       signalFunctionHasStarted.await();
       logger.info("--->>> done waiting for signalFunctionHasStarted.await()");
     } catch (InterruptedException e) {
@@ -55,6 +55,7 @@ public class CheckPrimaryBucketFunction implements Function {
 
   @Override
   public void execute(FunctionContext context) {
+    logger.info("--->>> starting function CheckPrimaryBucketFunction.execute()");
     RegionFunctionContextImpl regionFunctionContext = (RegionFunctionContextImpl) context;
     String key = (String) regionFunctionContext.getFilter().iterator().next();
     boolean releaseLatchEarly = (boolean) context.getArguments();
@@ -72,7 +73,9 @@ public class CheckPrimaryBucketFunction implements Function {
         regionFunctionContext.getLocalDataSet(regionFunctionContext.getDataSet());
 
     if (releaseLatchEarly) {
+      logger.info("--->>> about to call signalFunctionHasStarted.countDown() [releaseLatchEarly]");
       signalFunctionHasStarted.countDown();
+      logger.info("--->>> done calling signalFunctionHasStarted.countDown() [releaseLatchEarly]");
       // now wait until test has moved primary
       try {
         signalPrimaryHasMoved.await();
@@ -83,7 +86,11 @@ public class CheckPrimaryBucketFunction implements Function {
 
     Runnable r = () -> {
       if (!releaseLatchEarly) {
+        logger
+            .info("--->>> about to call signalFunctionHasStarted.countDown() [!releaseLatchEarly]");
         signalFunctionHasStarted.countDown();
+        logger
+            .info("--->>> done calling signalFunctionHasStarted.countDown() [!releaseLatchEarly]");
       }
 
       try {
