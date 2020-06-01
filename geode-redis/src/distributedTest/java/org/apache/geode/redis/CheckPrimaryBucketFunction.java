@@ -39,9 +39,20 @@ public class CheckPrimaryBucketFunction implements Function {
   private static final CountDownLatch signalPrimaryHasMoved = new CountDownLatch(1);
   private static final Logger logger = LogService.getLogger();
 
+  static {
+    logger.info("===>>> static initializer - signalFunctionHasStarted.getCount() = {}",
+        signalFunctionHasStarted.getCount());
+  }
+
+  public CheckPrimaryBucketFunction() {
+    logger.info("===>>> CheckPrimaryBucketFunction().<init> - {}",
+        signalFunctionHasStarted.getCount());
+  }
+
   public static void waitForFunctionToStart() {
     try {
-      logger.info("--->>> about to call signalFunctionHasStarted.await()");
+      logger.info("--->>> about to call signalFunctionHasStarted.await() - {}",
+          signalFunctionHasStarted.getCount());
       signalFunctionHasStarted.await();
       logger.info("--->>> done waiting for signalFunctionHasStarted.await()");
     } catch (InterruptedException e) {
