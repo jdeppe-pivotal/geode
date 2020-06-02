@@ -75,14 +75,8 @@ public class EnsurePrimaryStaysPutDUnitTest {
         String.format("create region --name=%s --type=PARTITION_REDUNDANT", REGION))
         .statusIsSuccess();
 
-    server1.invoke(() -> {
-      FunctionService.registerFunction(new CheckPrimaryBucketFunction());
-      CheckPrimaryBucketFunction.resetLatches();
-    });
-    server2.invoke(() -> {
-      FunctionService.registerFunction(new CheckPrimaryBucketFunction());
-      CheckPrimaryBucketFunction.resetLatches();
-    });
+    server1.invoke(() -> FunctionService.registerFunction(new CheckPrimaryBucketFunction()));
+    server2.invoke(() -> FunctionService.registerFunction(new CheckPrimaryBucketFunction()));
   }
 
   // @Test
@@ -141,7 +135,12 @@ public class EnsurePrimaryStaysPutDUnitTest {
           return rc.getResult().get(0);
         });
 
-    primary.invoke("waitForFunctionToStart", CheckPrimaryBucketFunction::waitForFunctionToStart);
+    primary.invoke("waitForFunctionToStart", () -> {
+      CheckPrimaryBucketFunction fn =
+          (CheckPrimaryBucketFunction) FunctionService.getRegisteredFunctions()
+              .get(CheckPrimaryBucketFunction.ID);
+      fn.waitForFunctionToStart();
+    });
 
     // switch primary to secondary while running test fn()
     secondary.invoke("Switching bucket", () -> {
@@ -153,9 +152,19 @@ public class EnsurePrimaryStaysPutDUnitTest {
       BucketAdvisor bucketAdvisor = region.getRegionAdvisor().getBucketAdvisor(bucketId);
 
       bucketAdvisor.becomePrimary(false);
-      CheckPrimaryBucketFunction.finishedMovingPrimary();
+
+      CheckPrimaryBucketFunction fn =
+          (CheckPrimaryBucketFunction) FunctionService.getRegisteredFunctions()
+              .get(CheckPrimaryBucketFunction.ID);
+      fn.finishedMovingPrimary();
     });
-    primary.invoke("finishedMovingPrimary", CheckPrimaryBucketFunction::finishedMovingPrimary);
+
+    primary.invoke("finishedMovingPrimary", () -> {
+      CheckPrimaryBucketFunction fn =
+          (CheckPrimaryBucketFunction) FunctionService.getRegisteredFunctions()
+              .get(CheckPrimaryBucketFunction.ID);
+      fn.finishedMovingPrimary();
+    });
 
     assertThat(asyncChecking.get())
         .as("CheckPrimaryBucketFunction determined that the primary has moved")

@@ -35,16 +35,12 @@ import org.apache.geode.test.awaitility.GeodeAwaitility;
 
 @SuppressWarnings("unchecked")
 public class CheckPrimaryBucketFunction implements Function {
-  private static CountDownLatch signalFunctionHasStarted = new CountDownLatch(1);
-  private static CountDownLatch signalPrimaryHasMoved = new CountDownLatch(1);
+  public static final String ID = CheckPrimaryBucketFunction.class.getName();
+  private final CountDownLatch signalFunctionHasStarted = new CountDownLatch(1);
+  private final CountDownLatch signalPrimaryHasMoved = new CountDownLatch(1);
   private static final Logger logger = LogService.getLogger();
 
-  public static void resetLatches() {
-    signalFunctionHasStarted = new CountDownLatch(1);
-    signalPrimaryHasMoved = new CountDownLatch(1);
-  }
-
-  public static void waitForFunctionToStart() {
+  public void waitForFunctionToStart() {
     try {
       logger.info("--->>> about to call signalFunctionHasStarted.await() - {}",
           signalFunctionHasStarted.getCount());
@@ -55,7 +51,7 @@ public class CheckPrimaryBucketFunction implements Function {
     }
   }
 
-  public static void finishedMovingPrimary() {
+  public void finishedMovingPrimary() {
     signalPrimaryHasMoved.countDown();
   }
 
@@ -137,6 +133,6 @@ public class CheckPrimaryBucketFunction implements Function {
 
   @Override
   public String getId() {
-    return CheckPrimaryBucketFunction.class.getName();
+    return ID;
   }
 }
