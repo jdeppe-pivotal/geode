@@ -75,8 +75,14 @@ public class EnsurePrimaryStaysPutDUnitTest {
         String.format("create region --name=%s --type=PARTITION_REDUNDANT", REGION))
         .statusIsSuccess();
 
-    server1.invoke(() -> FunctionService.registerFunction(new CheckPrimaryBucketFunction()));
-    server2.invoke(() -> FunctionService.registerFunction(new CheckPrimaryBucketFunction()));
+    server1.invoke(() -> {
+      FunctionService.registerFunction(new CheckPrimaryBucketFunction());
+      CheckPrimaryBucketFunction.resetLatches();
+    });
+    server2.invoke(() -> {
+      FunctionService.registerFunction(new CheckPrimaryBucketFunction());
+      CheckPrimaryBucketFunction.resetLatches();
+    });
   }
 
   // @Test
