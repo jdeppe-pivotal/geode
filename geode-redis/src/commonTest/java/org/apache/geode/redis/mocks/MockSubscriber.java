@@ -26,6 +26,8 @@ import redis.clients.jedis.Client;
 import redis.clients.jedis.JedisPubSub;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
+import org.apache.geode.logging.internal.log4j.api.LogService;
+
 public class MockSubscriber extends JedisPubSub {
 
   private final CountDownLatch subscriptionLatch;
@@ -42,6 +44,7 @@ public class MockSubscriber extends JedisPubSub {
       Collections.synchronizedList(new ArrayList<>());
   private String localSocketAddress;
   private Client client;
+  private Thread currentThread;
 
   public MockSubscriber() {
     this(new CountDownLatch(1));
@@ -65,6 +68,19 @@ public class MockSubscriber extends JedisPubSub {
     localSocketAddress = client.getSocket().getLocalSocketAddress().toString();
     this.client = client;
     super.proceed(client, channels);
+  }
+
+  public void recordCurrentThread() {
+    currentThread = Thread.currentThread();
+  }
+
+  public void logCurrentStacktrace() {
+    if (currentThread != null) {
+      LogService.getLogger().debug("=> {} {}", currentThread, currentThread.getState());
+      for (StackTraceElement st : currentThread.getStackTrace()) {
+        LogService.getLogger().debug("-> {}", st);
+      }
+    }
   }
 
   private void switchThreadName(String suffix) {
