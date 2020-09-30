@@ -45,6 +45,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
@@ -164,7 +165,7 @@ public class NettyRedisServer {
         ChannelPipeline pipeline = socketChannel.pipeline();
         addSSLIfEnabled(socketChannel, pipeline);
         pipeline.addLast(ByteToCommandDecoder.class.getSimpleName(), new ByteToCommandDecoder());
-        // pipeline.addLast(new WriteTimeoutHandler(10));
+        pipeline.addLast(new WriteTimeoutHandler(10));
         pipeline.addLast(ExecutionHandlerContext.class.getSimpleName(),
             new ExecutionHandlerContext(socketChannel, regionProvider, pubsub,
                 allowUnsupportedSupplier, shutdownInvoker, redisStats, backgroundExecutor,
