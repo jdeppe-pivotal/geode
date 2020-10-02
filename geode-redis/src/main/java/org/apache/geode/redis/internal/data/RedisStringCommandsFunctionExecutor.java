@@ -24,11 +24,9 @@ import org.apache.geode.redis.internal.executor.string.RedisStringCommands;
 import org.apache.geode.redis.internal.executor.string.SetOptions;
 
 public class RedisStringCommandsFunctionExecutor extends RedisDataCommandsFunctionExecutor
-    implements
-    RedisStringCommands {
+    implements RedisStringCommands {
 
-  public RedisStringCommandsFunctionExecutor(
-      CommandHelper helper) {
+  public RedisStringCommandsFunctionExecutor(CommandHelper helper) {
     super(helper);
   }
 
@@ -42,8 +40,7 @@ public class RedisStringCommandsFunctionExecutor extends RedisDataCommandsFuncti
 
   @Override
   public long append(ByteArrayWrapper key, ByteArrayWrapper valueToAppend) {
-    return stripedExecute(key,
-        () -> getRedisString(key).append(valueToAppend, getRegion(), key));
+    return stripedExecute(key, () -> getRedisString(key).append(valueToAppend, getRegion(), key));
   }
 
   @Override

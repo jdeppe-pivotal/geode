@@ -17,9 +17,11 @@
 package org.apache.geode.redis.internal.data;
 
 import static org.apache.geode.redis.internal.data.RedisDataType.REDIS_HASH;
+import static org.apache.geode.redis.internal.data.RedisDataType.REDIS_LIST;
 import static org.apache.geode.redis.internal.data.RedisDataType.REDIS_SET;
 import static org.apache.geode.redis.internal.data.RedisDataType.REDIS_STRING;
 import static org.apache.geode.redis.internal.data.RedisHash.NULL_REDIS_HASH;
+import static org.apache.geode.redis.internal.data.RedisList.NULL_REDIS_LIST;
 import static org.apache.geode.redis.internal.data.RedisSet.NULL_REDIS_SET;
 import static org.apache.geode.redis.internal.data.RedisString.NULL_REDIS_STRING;
 
@@ -144,4 +146,19 @@ public class CommandHelper {
     region.put(key, result);
     return result;
   }
+
+  RedisList getRedisList(ByteArrayWrapper key) {
+    return checkListType(getRedisData(key, NULL_REDIS_LIST));
+  }
+
+  private RedisList checkListType(RedisData redisData) {
+    if (redisData == null) {
+      return null;
+    }
+    if (redisData.getType() != REDIS_LIST) {
+      throw new RedisDataTypeMismatchException(RedisConstants.ERROR_WRONG_TYPE);
+    }
+    return (RedisList) redisData;
+  }
+
 }

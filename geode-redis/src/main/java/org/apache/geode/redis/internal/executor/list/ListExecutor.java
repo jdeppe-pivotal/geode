@@ -11,27 +11,16 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- *
  */
-package org.apache.geode.redis.internal.data;
 
+package org.apache.geode.redis.internal.executor.list;
 
-public enum RedisDataType {
+import org.apache.geode.redis.internal.executor.AbstractExecutor;
+import org.apache.geode.redis.internal.netty.ExecutionHandlerContext;
 
-  REDIS_STRING("string"),
-  REDIS_HASH("hash"),
-  REDIS_SET("set"),
-  REDIS_PUBSUB("pubsub"),
-  REDIS_LIST("list");
+public abstract class ListExecutor extends AbstractExecutor {
 
-  private final String toStringValue;
-
-  RedisDataType(String toString) {
-    toStringValue = toString;
-  }
-
-  @Override
-  public String toString() {
-    return toStringValue;
+  RedisListCommands createRedisListCommands(ExecutionHandlerContext context) {
+    return new RedisListCommandsFunctionInvoker(context.getRegionProvider().getDataRegion());
   }
 }

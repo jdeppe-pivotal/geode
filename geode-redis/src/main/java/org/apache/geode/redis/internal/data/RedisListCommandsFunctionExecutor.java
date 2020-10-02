@@ -11,27 +11,32 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- *
  */
+
 package org.apache.geode.redis.internal.data;
 
+import java.util.List;
 
-public enum RedisDataType {
+import org.apache.geode.redis.internal.executor.list.RedisListCommands;
 
-  REDIS_STRING("string"),
-  REDIS_HASH("hash"),
-  REDIS_SET("set"),
-  REDIS_PUBSUB("pubsub"),
-  REDIS_LIST("list");
+public class RedisListCommandsFunctionExecutor extends RedisDataCommandsFunctionExecutor
+    implements RedisListCommands {
 
-  private final String toStringValue;
+  public RedisListCommandsFunctionExecutor(CommandHelper helper) {
+    super(helper);
+  }
 
-  RedisDataType(String toString) {
-    toStringValue = toString;
+  private RedisList getRedisList(ByteArrayWrapper key) {
+    return helper.getRedisList(key);
   }
 
   @Override
-  public String toString() {
-    return toStringValue;
+  public Long lpush(ByteArrayWrapper key, List<ByteArrayWrapper> elements) {
+    return stripedExecute(key, () -> getRedisList(key).lpush(getRegion(), key, elements));
+  }
+
+  @Override
+  public ByteArrayWrapper lpop(ByteArrayWrapper key) {
+    return stripedExecute(key, () -> getRedisList(key).lpop(getRegion(), key));
   }
 }

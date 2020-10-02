@@ -30,6 +30,7 @@ import org.apache.geode.redis.internal.data.CommandHelper;
 import org.apache.geode.redis.internal.data.RedisData;
 import org.apache.geode.redis.internal.data.RedisHashCommandsFunctionExecutor;
 import org.apache.geode.redis.internal.data.RedisKeyCommandsFunctionExecutor;
+import org.apache.geode.redis.internal.data.RedisListCommandsFunctionExecutor;
 import org.apache.geode.redis.internal.data.RedisSetCommandsFunctionExecutor;
 import org.apache.geode.redis.internal.data.RedisStringCommandsFunctionExecutor;
 import org.apache.geode.redis.internal.executor.string.SetOptions;
@@ -42,6 +43,7 @@ public class CommandFunction extends SingleResultRedisFunction {
   private final transient RedisHashCommandsFunctionExecutor hashCommands;
   private final transient RedisSetCommandsFunctionExecutor setCommands;
   private final transient RedisStringCommandsFunctionExecutor stringCommands;
+  private final transient RedisListCommandsFunctionExecutor listCommands;
 
   public static void register(Region<ByteArrayWrapper, RedisData> dataRegion,
       StripedExecutor stripedExecutor,
@@ -71,6 +73,7 @@ public class CommandFunction extends SingleResultRedisFunction {
     hashCommands = new RedisHashCommandsFunctionExecutor(helper);
     setCommands = new RedisSetCommandsFunctionExecutor(helper);
     stringCommands = new RedisStringCommandsFunctionExecutor(helper);
+    listCommands = new RedisListCommandsFunctionExecutor(helper);
   }
 
   @Override
@@ -261,6 +264,13 @@ public class CommandFunction extends SingleResultRedisFunction {
         ByteArrayWrapper field = (ByteArrayWrapper) args[1];
         double increment = (double) args[2];
         return hashCommands.hincrbyfloat(key, field, increment);
+      }
+      case LPOP: {
+        return listCommands.lpop(key);
+      }
+      case LPUSH: {
+        ArrayList<ByteArrayWrapper> elementsToAdd = (ArrayList<ByteArrayWrapper>) args[1];
+        return listCommands.lpush(key, elementsToAdd);
       }
       default:
         throw new UnsupportedOperationException(ID + " does not yet support " + command);

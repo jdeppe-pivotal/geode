@@ -44,7 +44,7 @@ public class RedisSet extends AbstractRedisData {
   public static final NullRedisSet NULL_REDIS_SET = new NullRedisSet();
   private HashSet<ByteArrayWrapper> members;
 
-  @SuppressWarnings("unchecked")
+  // @SuppressWarnings("unchecked")
   RedisSet(Collection<ByteArrayWrapper> members) {
     if (members instanceof HashSet) {
       this.members = (HashSet<ByteArrayWrapper>) members;

@@ -11,27 +11,29 @@
  * is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
- *
  */
-package org.apache.geode.redis.internal.data;
 
+package org.apache.geode.redis.internal.executor.list;
 
-public enum RedisDataType {
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.ClassRule;
+import redis.clients.jedis.Jedis;
 
-  REDIS_STRING("string"),
-  REDIS_HASH("hash"),
-  REDIS_SET("set"),
-  REDIS_PUBSUB("pubsub"),
-  REDIS_LIST("list");
+import org.apache.geode.NativeRedisTestRule;
 
-  private final String toStringValue;
+public class ListNativeRedisAcceptanceTest extends ListIntegrationTest {
 
-  RedisDataType(String toString) {
-    toStringValue = toString;
+  @ClassRule
+  public static NativeRedisTestRule redis = new NativeRedisTestRule();
+
+  @BeforeClass
+  public static void setUp() {
+    jedis = new Jedis("localhost", redis.getPort(), 10000000);
   }
 
-  @Override
-  public String toString() {
-    return toStringValue;
+  @AfterClass
+  public static void tearDown() {
+    jedis.close();
   }
 }

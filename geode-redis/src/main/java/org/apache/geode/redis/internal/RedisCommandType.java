@@ -61,6 +61,8 @@ import org.apache.geode.redis.internal.executor.key.RenameExecutor;
 import org.apache.geode.redis.internal.executor.key.ScanExecutor;
 import org.apache.geode.redis.internal.executor.key.TTLExecutor;
 import org.apache.geode.redis.internal.executor.key.TypeExecutor;
+import org.apache.geode.redis.internal.executor.list.LpopExecutor;
+import org.apache.geode.redis.internal.executor.list.LpushExecutor;
 import org.apache.geode.redis.internal.executor.pubsub.PsubscribeExecutor;
 import org.apache.geode.redis.internal.executor.pubsub.PublishExecutor;
 import org.apache.geode.redis.internal.executor.pubsub.PunsubscribeExecutor;
@@ -296,8 +298,8 @@ public enum RedisCommandType {
   LINSERT(null, UNIMPLEMENTED),
   LLEN(null, UNIMPLEMENTED),
   LOLWUT(null, UNIMPLEMENTED),
-  LPOP(null, UNIMPLEMENTED),
-  LPUSH(null, UNIMPLEMENTED),
+  LPOP(new LpopExecutor(), UNSUPPORTED, new MinimumParameterRequirements(1)),
+  LPUSH(new LpushExecutor(), UNSUPPORTED, new MinimumParameterRequirements(2)),
   LPUSHX(null, UNIMPLEMENTED),
   LRANGE(null, UNIMPLEMENTED),
   LREM(null, UNIMPLEMENTED),
