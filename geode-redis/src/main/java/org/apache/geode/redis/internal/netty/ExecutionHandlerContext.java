@@ -17,6 +17,7 @@ package org.apache.geode.redis.internal.netty;
 
 
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -84,6 +85,7 @@ public class ExecutionHandlerContext extends ChannelInboundHandlerAdapter {
       new LinkedBlockingQueue<>(MAX_QUEUED_COMMANDS);
 
   private final int serverPort;
+  private CountDownLatch eventLoopSwitched;
 
   private boolean isAuthenticated;
 
@@ -396,4 +398,24 @@ public class ExecutionHandlerContext extends ChannelInboundHandlerAdapter {
     return pubsub;
   }
 
+  public CountDownLatch getOrCreateEventLoopLatch() {
+    if (eventLoopSwitched != null) {
+      return eventLoopSwitched;
+    }
+
+    eventLoopSwitched = new CountDownLatch(1);
+    return eventLoopSwitched;
+  }
+
+  public void eventLoopReady() {
+    if (eventLoopSwitched == null) {
+      return;
+    }
+
+    try {
+      eventLoopSwitched.await();
+    } catch (InterruptedException e) {
+      logger.info("Event loop interrupted", e);
+    }
+  }
 }
