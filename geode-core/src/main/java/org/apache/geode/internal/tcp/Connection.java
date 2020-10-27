@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.geode.CancelException;
 import org.apache.geode.SerializationException;
 import org.apache.geode.SystemFailure;
+import org.apache.geode.annotations.VisibleForTesting;
 import org.apache.geode.annotations.internal.MakeNotStatic;
 import org.apache.geode.annotations.internal.MutableForTesting;
 import org.apache.geode.cache.CacheClosedException;
@@ -753,7 +754,8 @@ public class Connection implements Runnable {
     }
   }
 
-  private void notifyHandshakeWaiter(boolean success) {
+  @VisibleForTesting
+  void clearSSLInputBuffer() {
     if (getConduit().useSSL() && ioFilter != null) {
       synchronized (ioFilter.getSynchObject()) {
         if (!ioFilter.isClosed()) {
@@ -763,7 +765,18 @@ public class Connection implements Runnable {
         }
       }
     }
-    synchronized (this.handshakeSync) {
+  }
+
+  @VisibleForTesting
+  void notifyHandshakeWaiter(boolean success) {
+    synchronized (handshakeSync) {
+      /*
+       * Return early to avoid modifying ioFilter's buffer more than once.
+       */
+      if (handshakeRead || handshakeCancelled) {
+        return;
+      }
+      clearSSLInputBuffer();
       if (success) {
         this.handshakeRead = true;
       } else {
@@ -2807,25 +2820,27 @@ public class Connection implements Runnable {
     final Version version = getRemoteVersion();
     try {
       msgReader = new MsgReader(this, ioFilter, version);
-
-      Header header = msgReader.readHeader();
-
-      ReplyMessage msg = null;
+      ReplyMessage msg;
       int len;
-      if (header.getMessageType() == NORMAL_MSG_TYPE) {
-        msg = (ReplyMessage) msgReader.readMessage(header);
-        len = header.getMessageLength();
-      } else {
-        MsgDestreamer destreamer = obtainMsgDestreamer(header.getMessageId(), version);
-        while (header.getMessageType() == CHUNKED_MSG_TYPE) {
+
+      synchronized (ioFilter.getSynchObject()) {
+        Header header = msgReader.readHeader();
+
+        if (header.getMessageType() == NORMAL_MSG_TYPE) {
+          msg = (ReplyMessage) msgReader.readMessage(header);
+          len = header.getMessageLength();
+        } else {
+          MsgDestreamer destreamer = obtainMsgDestreamer(header.getMessageId(), version);
+          while (header.getMessageType() == CHUNKED_MSG_TYPE) {
+            msgReader.readChunk(header, destreamer);
+            header = msgReader.readHeader();
+          }
           msgReader.readChunk(header, destreamer);
-          header = msgReader.readHeader();
+          msg = (ReplyMessage) destreamer.getMessage();
+          releaseMsgDestreamer(header.getMessageId(), destreamer);
+          len = destreamer.size();
         }
-        msgReader.readChunk(header, destreamer);
-        msg = (ReplyMessage) destreamer.getMessage();
-        releaseMsgDestreamer(header.getMessageId(), destreamer);
-        len = destreamer.size();
-      }
+      } // sync
       // I'd really just like to call dispatchMessage here. However,
       // that call goes through a bunch of checks that knock about
       // 10% of the performance. Since this direct-ack stuff is all
