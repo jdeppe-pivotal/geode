@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM buildpack-deps:bionic-scm
+FROM buildpack-deps:focal-scm
 ENTRYPOINT []
 
 ARG CHROME_DRIVER_VERSION=2.35
+ARG DEBIAN_FRONTEND=noninteractive
 
 WORKDIR /tmp/work
 RUN  apt-get update \
