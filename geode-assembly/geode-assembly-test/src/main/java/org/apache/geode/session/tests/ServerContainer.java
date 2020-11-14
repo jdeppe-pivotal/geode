@@ -176,6 +176,8 @@ public abstract class ServerContainer {
     logger.info("Deployed WAR file at {}", war.getFile());
   }
 
+  private static int debugPort = 6001;
+
   /**
    * Starts this cargo container by picking the container's ports (RMI, AJP, and regular) and
    * calling the cargo container's start function
@@ -194,7 +196,7 @@ public abstract class ServerContainer {
     config.setProperty(GeneralPropertySet.RMI_PORT, Integer.toString(containerRmiPort));
     config.setProperty(TomcatPropertySet.AJP_PORT, Integer.toString(tomcatAjpPort));
     config.setProperty(GeneralPropertySet.PORT_OFFSET, "0");
-    int jvmJmxPort = portSupplier.getAsInt();
+    int jvmJmxPort = debugPort++; // portSupplier.getAsInt();
     String jvmArgs = "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=" + jvmJmxPort;
     if (SystemUtils.isJavaVersionAtLeast(JavaVersion.JAVA_9)) {
       jvmArgs += " --add-opens java.base/java.lang.module=ALL-UNNAMED" +

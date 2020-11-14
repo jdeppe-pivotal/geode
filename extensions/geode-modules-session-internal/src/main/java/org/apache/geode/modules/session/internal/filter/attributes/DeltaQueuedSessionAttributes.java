@@ -47,7 +47,9 @@ public class DeltaQueuedSessionAttributes extends AbstractDeltaSessionAttributes
   /**
    * Default constructor
    */
-  public DeltaQueuedSessionAttributes() {}
+  public DeltaQueuedSessionAttributes() {
+    System.err.println("Creating DeltaQueuedSessionAttributes");
+  }
 
   public void setReplicationTrigger(String trigger) {
     this.trigger = Trigger.valueOf(trigger.toUpperCase());

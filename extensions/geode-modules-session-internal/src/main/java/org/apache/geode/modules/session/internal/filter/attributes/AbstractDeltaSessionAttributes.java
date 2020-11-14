@@ -51,6 +51,7 @@ public abstract class AbstractDeltaSessionAttributes extends AbstractSessionAttr
 
   @Override
   public void toDelta(DataOutput out) throws IOException {
+    LOG.info("+++ toDelta lastAccessedTime: " + lastAccessedTime + " id: " + session.getId());
     out.writeInt(maxInactiveInterval);
     out.writeLong(lastAccessedTime);
 
@@ -70,6 +71,7 @@ public abstract class AbstractDeltaSessionAttributes extends AbstractSessionAttr
   public void fromDelta(DataInput in) throws IOException, InvalidDeltaException {
     maxInactiveInterval = in.readInt();
     lastAccessedTime = in.readLong();
+    LOG.info("+++ fromDelta lastAccessedTime: " + lastAccessedTime + " id: " + session.getId());
     Map<String, DeltaEvent> localDeltas = new HashMap<String, DeltaEvent>();
     try {
       int size = DataSerializer.readInteger(in);

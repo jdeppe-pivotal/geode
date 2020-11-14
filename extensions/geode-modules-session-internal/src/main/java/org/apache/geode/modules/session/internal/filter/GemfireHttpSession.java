@@ -400,6 +400,9 @@ public class GemfireHttpSession implements HttpSession, DataSerializable, Delta 
     if (getMaxInactiveInterval() >= 0) {
       long now = System.currentTimeMillis();
       if (now - attributes.getLastAccessedTime() >= getMaxInactiveInterval() * 1000) {
+        LOG.info("+++ session is invalid - now: " + now);
+        LOG.info("+++ session is invalid - attributes.getLastAccessedTime: " + attributes.getLastAccessedTime());
+        LOG.info("+++ session is invalid - maxInactiveInterval: " + getMaxInactiveInterval());
         return false;
       }
     }
