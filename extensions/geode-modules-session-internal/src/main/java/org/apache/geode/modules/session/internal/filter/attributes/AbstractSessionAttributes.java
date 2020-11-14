@@ -185,8 +185,7 @@ public abstract class AbstractSessionAttributes implements SessionAttributes {
   private void fromDataPre_GEODE_1_3_0_0(DataInput in) throws IOException, ClassNotFoundException {
     maxInactiveInterval = in.readInt();
     lastAccessedTime = in.readLong();
-    LOG.info("+++ fromDataPre_GEODE_1_3_0_0 lastAccessedTime: " + lastAccessedTime
-        + " id: " + session.getId());
+    LOG.info("+++ fromDataPre_GEODE_1_3_0_0 lastAccessedTime: " + lastAccessedTime);
     int size = in.readInt();
     while (size-- > 0) {
       DeltaEvent event = DataSerializer.readObject(in);
