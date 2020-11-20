@@ -85,7 +85,6 @@ public class LuceneGetPageFunction implements InternalFunction<Object> {
       if (value instanceof PdxInstance) {
         value = securityService.postProcess(region.getFullPath(), key,
             ((PdxInstance) value).getObject(), false);
-
       } else {
         value = securityService.postProcess(region.getFullPath(), key, value, false);
       }

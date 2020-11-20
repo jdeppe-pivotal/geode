@@ -40,6 +40,7 @@ import org.apache.geode.cache.client.ClientRegionShortcut;
 import org.apache.geode.cache.server.CacheServer;
 import org.apache.geode.distributed.ConfigurationProperties;
 import org.apache.geode.examples.SimpleSecurityManager;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.security.PostProcessor;
 import org.apache.geode.security.templates.UserPasswordAuthInit;
 import org.apache.geode.test.junit.categories.LuceneTest;
@@ -106,7 +107,6 @@ public class LuceneClientSecurityPostProcessingDUnitTest extends LuceneQueriesAc
         service.createLuceneQueryFactory().create(INDEX_NAME, REGION_NAME, "hello", "field1");
     service.waitUntilFlushed(INDEX_NAME, REGION_NAME, 5, TimeUnit.MINUTES);
 
-
     // verify a get is post processed
     assertEquals(new org.apache.geode.cache.lucene.test.TestObject("hello", "***"),
         getCache().getRegion(REGION_NAME).get("key"));
@@ -139,7 +139,7 @@ public class LuceneClientSecurityPostProcessingDUnitTest extends LuceneQueriesAc
     @Override
     public Object processRegionValue(Object principal, String regionName, Object key,
         Object value) {
-      System.out.println("NABA:: hitting the post" + value.getClass());
+      LogService.getLogger().info("NABA:: hitting the post {}", value.getClass());
       Thread.dumpStack();
       if (value instanceof org.apache.geode.cache.lucene.test.TestObject) {
         org.apache.geode.cache.lucene.test.TestObject newValue =
