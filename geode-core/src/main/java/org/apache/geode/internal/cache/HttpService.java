@@ -15,6 +15,7 @@
 package org.apache.geode.internal.cache;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -132,7 +133,7 @@ public class HttpService {
     return httpServer;
   }
 
-  public synchronized void addWebApplication(String webAppContext, String warFilePath,
+  public synchronized void addWebApplication(String webAppContext, Path warFilePath,
       Pair<String, Object>... attributeNameValuePairs)
       throws Exception {
     if (httpServer == null) {
@@ -144,7 +145,7 @@ public class HttpService {
 
     WebAppContext webapp = new WebAppContext();
     webapp.setContextPath(webAppContext);
-    webapp.setWar(warFilePath);
+    webapp.setWar(warFilePath.toString());
     webapp.setParentLoaderPriority(false);
 
     // GEODE-7334: load all jackson classes from war file except jackson annotations

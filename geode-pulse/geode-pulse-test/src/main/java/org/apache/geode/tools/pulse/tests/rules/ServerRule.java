@@ -18,6 +18,8 @@ package org.apache.geode.tools.pulse.tests.rules;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.junit.rules.ExternalResource;
@@ -90,7 +92,7 @@ public class ServerRule extends ExternalResource {
     jetty.stop();
   }
 
-  private String getPulseWarPath() throws IOException {
+  private Path getPulseWarPath() throws IOException {
     String warPath;
     ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
     InputStream inputStream = classLoader.getResourceAsStream("GemFireVersion.properties");
@@ -101,7 +103,7 @@ public class ServerRule extends ExternalResource {
     String propFilePath = classLoader.getResource("GemFireVersion.properties").getPath();
     warPath =
         propFilePath.substring(0, propFilePath.indexOf("generated-resources")) + "libs/" + warPath;
-    return warPath;
+    return Paths.get(warPath);
   }
 
 }
