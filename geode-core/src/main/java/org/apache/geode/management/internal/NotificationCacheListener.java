@@ -15,100 +15,51 @@
 package org.apache.geode.management.internal;
 
 
+import java.util.concurrent.CountDownLatch;
+
 import javax.management.Notification;
 
-import org.apache.geode.cache.CacheListener;
 import org.apache.geode.cache.EntryEvent;
-import org.apache.geode.cache.RegionEvent;
+import org.apache.geode.cache.util.CacheListenerAdapter;
 
 /**
  * This listener will be attached to each notification region corresponding to a member
  *
  */
-public class NotificationCacheListener implements CacheListener<NotificationKey, Notification> {
+public class NotificationCacheListener extends CacheListenerAdapter<NotificationKey, Notification> {
 
-  /**
-   * For the
-   */
-  private NotificationHubClient notifClient;
+  private final NotificationHubClient notifClient;
 
-  private volatile boolean readyForEvents;
+  private final CountDownLatch readyForEvents;
 
   public NotificationCacheListener(MBeanProxyFactory proxyHelper) {
-
     notifClient = new NotificationHubClient(proxyHelper);
-    this.readyForEvents = false;
-
+    readyForEvents = new CountDownLatch(1);
   }
 
   @Override
   public void afterCreate(EntryEvent<NotificationKey, Notification> event) {
-    if (!readyForEvents) {
-      return;
-    }
+    waitUntilReady();
+
     notifClient.sendNotification(event);
-
-  }
-
-  @Override
-  public void afterDestroy(EntryEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void afterInvalidate(EntryEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void afterRegionClear(RegionEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void afterRegionCreate(RegionEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void afterRegionDestroy(RegionEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void afterRegionInvalidate(RegionEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
-  }
-
-  @Override
-  public void afterRegionLive(RegionEvent<NotificationKey, Notification> event) {
-    // TODO Auto-generated method stub
-
   }
 
   @Override
   public void afterUpdate(EntryEvent<NotificationKey, Notification> event) {
-    if (!readyForEvents) {
-      return;
-    }
+    waitUntilReady();
+
     notifClient.sendNotification(event);
-
-  }
-
-  @Override
-  public void close() {
-    // TODO Auto-generated method stub
-
   }
 
   public void markReady() {
-    readyForEvents = true;
+    readyForEvents.countDown();
+  }
+
+  private void waitUntilReady() {
+    try {
+      readyForEvents.await();
+    } catch (InterruptedException ex) {
+    }
   }
 
 }

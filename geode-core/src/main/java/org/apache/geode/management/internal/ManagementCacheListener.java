@@ -14,6 +14,8 @@
  */
 package org.apache.geode.management.internal;
 
+import java.util.concurrent.CountDownLatch;
+
 import javax.management.ObjectName;
 
 import org.apache.logging.log4j.Logger;
@@ -33,20 +35,26 @@ public class ManagementCacheListener extends CacheListenerAdapter<String, Object
 
   private static final Logger logger = LogService.getLogger();
 
-  private MBeanProxyFactory proxyHelper;
+  private final MBeanProxyFactory proxyHelper;
 
-  private volatile boolean readyForEvents;
+  private final CountDownLatch readyForEvents;
 
-  public ManagementCacheListener(MBeanProxyFactory proxyHelper) {
-    this.proxyHelper = proxyHelper;
-    this.readyForEvents = false;
+  public ManagementCacheListener(MBeanProxyFactory factory) {
+    proxyHelper = factory;
+    readyForEvents = new CountDownLatch(1);
+  }
+
+  private void waitUntilReady() {
+    try {
+      readyForEvents.await();
+    } catch (InterruptedException ex) {
+    }
   }
 
   @Override
   public void afterCreate(EntryEvent<String, Object> event) {
-    if (!readyForEvents) {
-      return;
-    }
+    waitUntilReady();
+
     ObjectName objectName = null;
 
     try {
@@ -64,6 +72,8 @@ public class ManagementCacheListener extends CacheListenerAdapter<String, Object
 
   @Override
   public void afterDestroy(EntryEvent<String, Object> event) {
+    waitUntilReady();
+
     ObjectName objectName = null;
 
     try {
@@ -81,11 +91,11 @@ public class ManagementCacheListener extends CacheListenerAdapter<String, Object
 
   @Override
   public void afterUpdate(EntryEvent<String, Object> event) {
+    waitUntilReady();
+
     ObjectName objectName = null;
+
     try {
-      if (!readyForEvents) {
-        return;
-      }
       objectName = ObjectName.getInstance(event.getKey());
 
       ProxyInfo proxyInfo = proxyHelper.findProxyInfo(objectName);
@@ -104,13 +114,12 @@ public class ManagementCacheListener extends CacheListenerAdapter<String, Object
       if (logger.isDebugEnabled()) {
         logger.debug("Proxy Update failed for {} with exception {}", objectName, e.getMessage(), e);
       }
-
     }
 
   }
 
   void markReady() {
-    readyForEvents = true;
+    readyForEvents.countDown();
   }
 
 }
