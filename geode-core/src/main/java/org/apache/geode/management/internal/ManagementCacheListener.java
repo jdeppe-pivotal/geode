@@ -41,7 +41,7 @@ public class ManagementCacheListener extends CacheListenerAdapter<String, Object
 
   public ManagementCacheListener(MBeanProxyFactory factory) {
     proxyHelper = factory;
-    readyForEvents = new CountDownLatch(1);
+    readyForEvents = new CountDownLatch(0);
   }
 
   private void waitUntilReady() {

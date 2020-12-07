@@ -34,7 +34,7 @@ public class NotificationCacheListener extends CacheListenerAdapter<Notification
 
   public NotificationCacheListener(MBeanProxyFactory proxyHelper) {
     notifClient = new NotificationHubClient(proxyHelper);
-    readyForEvents = new CountDownLatch(1);
+    readyForEvents = new CountDownLatch(0);
   }
 
   @Override
