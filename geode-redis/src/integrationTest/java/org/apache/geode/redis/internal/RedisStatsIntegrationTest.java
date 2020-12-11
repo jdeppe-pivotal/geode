@@ -474,27 +474,27 @@ public class RedisStatsIntegrationTest {
   @Test
   public void clientsStat_withConnectAndClose_isCorrect() {
 
-    jedis = new Jedis("localhost", server.getPort(), TIMEOUT);
-    jedis.ping();
+    Jedis jedis2 = new Jedis("localhost", server.getPort(), TIMEOUT);
+    jedis2.ping();
 
     assertThat(redisStats.getConnectedClients()).isEqualTo(1);
 
-    jedis.close();
-    GeodeAwaitility.await().atMost(Duration.ofSeconds(2))
-        .untilAsserted(() -> assertThat(redisStats.getConnectedClients()).isEqualTo(0));
+    jedis2.close();
+
+    assertThat(redisStats.getConnectedClients()).isEqualTo(0);
   }
 
   @Test
   public void connectionsReceivedStat_shouldIncrement_WhenNewConnectionOccurs() {
 
-    jedis = new Jedis("localhost", server.getPort(), TIMEOUT);
-    jedis.ping();
+    Jedis jedis2 = new Jedis("localhost", server.getPort(), TIMEOUT);
+    jedis2.ping();
 
     assertThat(redisStats.getConnectionsReceived()).isEqualTo(1);
 
-    jedis.close();
+    jedis2.close();
 
-    assertThat(redisStats.getConnectionsReceived()).isEqualTo(1);
+    assertThat(redisStats.getConnectedClients()).isEqualTo(0);
   }
 
   // ######################## Server Section ################

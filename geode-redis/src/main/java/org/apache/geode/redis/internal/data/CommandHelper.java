@@ -137,12 +137,15 @@ public class CommandHelper {
     return (RedisString) redisData;
   }
 
-  RedisString getRedisString(ByteArrayWrapper key) {
+  RedisString getRedisString(ByteArrayWrapper key, boolean affectsRedisStatistics) {
     RedisData redisData = getRedisData(key, NULL_REDIS_STRING);
+
     if (redisData == NULL_REDIS_STRING) {
-      redisStats.incKeyspaceMisses();
+      if (affectsRedisStatistics)
+        redisStats.incKeyspaceMisses();
     } else {
-      redisStats.incKeyspaceHits();
+      if (affectsRedisStatistics)
+        redisStats.incKeyspaceHits();
     }
 
     return checkStringType(redisData, false);
@@ -150,18 +153,22 @@ public class CommandHelper {
 
   RedisString getRedisStringIgnoringType(ByteArrayWrapper key) {
     RedisData redisData = getRedisData(key, NULL_REDIS_STRING);
+
     if (redisData == NULL_REDIS_STRING) {
       redisStats.incKeyspaceMisses();
     } else {
       redisStats.incKeyspaceHits();
     }
+
     return checkStringType(redisData, true);
   }
 
   RedisString setRedisString(ByteArrayWrapper key, ByteArrayWrapper value) {
     RedisString result;
     RedisData redisData = getRedisData(key);
-    if (redisData.isNull() || redisData.getType() != REDIS_STRING) {
+
+    if (redisData.isNull()
+        || redisData.getType() != REDIS_STRING) {
       redisStats.incKeyspaceMisses();
       result = new RedisString(value);
     } else {
@@ -169,6 +176,7 @@ public class CommandHelper {
       result = (RedisString) redisData;
       result.set(value);
     }
+
     region.put(key, result);
     return result;
   }
