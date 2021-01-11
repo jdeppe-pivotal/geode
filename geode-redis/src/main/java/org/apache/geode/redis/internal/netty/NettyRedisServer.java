@@ -16,8 +16,10 @@
 
 package org.apache.geode.redis.internal.netty;
 
+import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -49,6 +51,8 @@ import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.logging.log4j.Logger;
+import org.buildobjects.process.ProcBuilder;
+import org.buildobjects.process.StreamConsumer;
 
 import org.apache.geode.distributed.internal.DistributionConfig;
 import org.apache.geode.internal.inet.LocalHostUtil;
@@ -217,6 +221,8 @@ public class NettyRedisServer {
     try {
       channelFuture.syncUninterruptibly();
     } catch (Exception ex) {
+      runCommand("netstat", "-na");
+      runCommand("lsof", "-i", ":" + port);
       throw new ManagementException(
           "Could not start Redis Server using bind address: " + bindAddress +
               " and port: " + port + ". " +
@@ -224,6 +230,22 @@ public class NettyRedisServer {
           ex);
     }
     return channelFuture.channel();
+  }
+
+  private void runCommand(String command, String... args) {
+    StreamConsumer consumer = stream -> {
+      InputStreamReader inputStreamReader = new InputStreamReader(stream);
+      BufferedReader bufReader = new BufferedReader(inputStreamReader);
+      String line;
+      while ((line = bufReader.readLine()) != null) {
+        System.err.println("::::: " + line);
+      }
+    };
+
+    new ProcBuilder(command, args)
+        .withOutputConsumer(consumer)
+        .withTimeoutMillis(60000)
+        .run();
   }
 
   private int getActualPort() {
