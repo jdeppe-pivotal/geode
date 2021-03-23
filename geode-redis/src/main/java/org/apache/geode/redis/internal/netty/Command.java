@@ -51,21 +51,12 @@ public class Command {
    *
    * @param commandElems List of elements in command
    */
-  public Command(List<byte[]> commandElems) {
-    if (commandElems == null || commandElems.isEmpty()) {
+  public Command(RedisCommandType type, List<byte[]> commandElems) {
+    if (commandElems == null) { // || commandElems.isEmpty()) {
       throw new IllegalArgumentException(
           "List of command elements cannot be empty -> List:" + commandElems);
     }
     this.commandElems = commandElems;
-
-    RedisCommandType type;
-    try {
-      byte[] charCommand = commandElems.get(0);
-      String commandName = Coder.bytesToString(charCommand).toUpperCase();
-      type = RedisCommandType.valueOf(commandName);
-    } catch (Exception e) {
-      type = RedisCommandType.UNKNOWN;
-    }
     this.commandType = type;
   }
 
@@ -92,6 +83,10 @@ public class Command {
    */
   public List<byte[]> getProcessedCommand() {
     return this.commandElems;
+  }
+
+  public int size() {
+    return commandElems.size() + 1;
   }
 
   /**
@@ -143,9 +138,9 @@ public class Command {
   }
 
   public RedisKey getKey() {
-    if (this.commandElems.size() > 1) {
+    if (this.commandElems.size() > 0) {
       if (this.bytes == null) {
-        this.bytes = new RedisKey(this.commandElems.get(1));
+        this.bytes = new RedisKey(this.commandElems.get(0));
       }
       return (RedisKey) this.bytes;
     } else {
@@ -155,7 +150,8 @@ public class Command {
 
   @Override
   public String toString() {
-    StringBuilder b = new StringBuilder();
+    StringBuilder b = new StringBuilder(commandType.toString());
+    b.append(' ');
     for (byte[] rawCommand : this.commandElems) {
       b.append(getHexEncodedString(rawCommand));
       b.append(' ');

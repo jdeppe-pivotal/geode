@@ -24,7 +24,7 @@ import org.apache.geode.redis.internal.netty.ExecutionHandlerContext;
 public class SlowlogParameterRequirements implements ParameterRequirements {
   @Override
   public void checkParameters(Command command, ExecutionHandlerContext context) {
-    int numberOfArguments = command.getProcessedCommand().size();
+    int numberOfArguments = command.size();
 
     if (numberOfArguments < 2) {
       throw new RedisParametersMismatchException(command.wrongNumberOfArgumentsErrorMessage());

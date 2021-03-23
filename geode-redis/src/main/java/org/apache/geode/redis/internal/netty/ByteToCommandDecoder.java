@@ -16,12 +16,15 @@
 package org.apache.geode.redis.internal.netty;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.ByteToMessageDecoder;
 
+import org.apache.geode.redis.internal.RedisCommandType;
 import org.apache.geode.redis.internal.statistics.RedisStats;
 
 /**
@@ -56,13 +59,29 @@ public class ByteToCommandDecoder extends ByteToMessageDecoder {
 
   private final RedisStats redisStats;
 
+  private static Map<Integer, RedisCommandType> commandTypeMap;
+
+  static {
+    commandTypeMap = new HashMap<>();
+
+    for (RedisCommandType t : RedisCommandType.values()) {
+      int hash = 1;
+      byte[] name = t.toString().getBytes();
+      for (int i = 0; i < name.length; i++) {
+        hash = 31 * hash + name[i];
+      }
+
+      commandTypeMap.put(hash, t);
+    }
+  }
+
   public ByteToCommandDecoder(RedisStats redisStats) {
     this.redisStats = redisStats;
   }
 
   @Override
   protected void decode(ChannelHandlerContext ctx, ByteBuf in, List<Object> out) throws Exception {
-    Command c;
+    Command c = null;
     long bytesRead = 0;
     do {
       int startReadIndex = in.readerIndex();
@@ -90,16 +109,11 @@ public class ByteToCommandDecoder extends ByteToMessageDecoder {
       throw new RedisCommandParserException(
           "Expected: " + (char) arrayID + " Actual: " + (char) firstB);
     }
-    List<byte[]> commandElems = parseArray(buffer);
 
-    if (commandElems == null) {
-      return null;
-    }
-
-    return new Command(commandElems);
+    return parseArrayToCommand(buffer);
   }
 
-  private List<byte[]> parseArray(ByteBuf buffer)
+  private Command parseArrayToCommand(ByteBuf buffer)
       throws RedisCommandParserException {
     byte currentChar;
     int arrayLength = parseCurrentNumber(buffer);
@@ -110,6 +124,18 @@ public class ByteToCommandDecoder extends ByteToMessageDecoder {
       throw new RedisCommandParserException("invalid multibulk length");
     }
 
+    currentChar = buffer.readByte();
+    if (currentChar != bulkStringID) {
+      throw new RedisCommandParserException(
+          "expected: \'$\', got \'" + (char) currentChar + "\'");
+    }
+
+    RedisCommandType commandType = parseBulkStringAsCommand(buffer);
+    if (commandType == null) {
+      return null;
+    }
+
+    arrayLength--;
     List<byte[]> commandElems = new ArrayList<>(arrayLength);
 
     for (int i = 0; i < arrayLength; i++) {
@@ -128,7 +154,8 @@ public class ByteToCommandDecoder extends ByteToMessageDecoder {
             "expected: \'$\', got \'" + (char) currentChar + "\'");
       }
     }
-    return commandElems;
+
+    return new Command(commandType, commandElems);
   }
 
   /**
@@ -162,6 +189,46 @@ public class ByteToCommandDecoder extends ByteToMessageDecoder {
     }
 
     return bulkString;
+  }
+
+  private RedisCommandType parseBulkStringAsCommand(ByteBuf buffer)
+      throws RedisCommandParserException {
+    int bulkStringLength = parseCurrentNumber(buffer);
+    if (bulkStringLength == Integer.MIN_VALUE) {
+      return null;
+    }
+    if (bulkStringLength > MAX_BULK_STRING_LENGTH) {
+      throw new RedisCommandParserException(
+          "invalid bulk length, cannot exceed max length of " + MAX_BULK_STRING_LENGTH);
+    }
+    if (!parseRN(buffer)) {
+      return null;
+    }
+
+    if (!buffer.isReadable(bulkStringLength)) {
+      return null;
+    }
+
+    int hash = 1;
+    for (int i = 0; i < bulkStringLength; i++) {
+      hash = 31 * hash + (buffer.readByte() & 0B11011111);
+    }
+
+    if (!parseRN(buffer)) {
+      return null;
+    }
+
+    return commandTypeMap.getOrDefault(hash, RedisCommandType.UNKNOWN);
+  }
+
+  private RedisCommandType lookupCommandType(ByteBuf buf) {
+    int hash = 1;
+    int endIndex = buf.readerIndex() + buf.readableBytes();
+    for (int i = buf.readerIndex(); i < endIndex; i++) {
+      hash = 31 * hash + (buf.getByte(i) & 0B11011111);
+    }
+
+    return commandTypeMap.get(hash);
   }
 
   /**

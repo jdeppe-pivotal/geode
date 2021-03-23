@@ -63,10 +63,7 @@ public class ClusterExecutor extends AbstractExecutor {
   public RedisResponse executeCommand(Command command, ExecutionHandlerContext context) {
 
     List<byte[]> args = command.getProcessedCommand();
-    String subCommand = new String(args.get(1));
-
-    StringBuilder strArgs = new StringBuilder();
-    args.forEach(x -> strArgs.append(new String(x)).append(" "));
+    String subCommand = new String(args.get(0));
 
     switch (subCommand.toLowerCase()) {
       case "info":

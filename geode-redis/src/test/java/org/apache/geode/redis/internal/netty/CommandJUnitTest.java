@@ -29,42 +29,37 @@ import org.apache.geode.redis.internal.RedisCommandType;
 
 /**
  * Test case for the command
- *
- *
  */
 public class CommandJUnitTest {
 
-  /**
-   * Test method for {@link org.apache.geode.redis.internal.netty.Command#Command(java.util.List)}.
-   */
   @Test
   public void testCommand() {
     List<byte[]> list1 = null;
-    assertThatThrownBy(() -> new Command(list1))
+    assertThatThrownBy(() -> new Command(RedisCommandType.UNKNOWN, list1))
         .hasMessageContaining("List of command elements cannot be empty");
 
     List<byte[]> list2 = new ArrayList<byte[]>();
 
-    assertThatThrownBy(() -> new Command(list2))
+    assertThatThrownBy(() -> new Command(RedisCommandType.UNKNOWN, list2))
         .hasMessageContaining("List of command elements cannot be empty");
 
     List<byte[]> list3 = new ArrayList<byte[]>();
     list3.add("Garbage".getBytes(StandardCharsets.UTF_8));
 
-    Command cmd = new Command(list3);
+    Command cmd = new Command(RedisCommandType.UNKNOWN, list3);
     assertThat(cmd.getCommandType()).isNotNull();
 
     assertThat(cmd.getCommandType()).isEqualTo(RedisCommandType.UNKNOWN);
     list3.clear();
     list3.add(RedisCommandType.HEXISTS.toString().getBytes(StandardCharsets.UTF_8));
-    cmd = new Command(list3);
+    cmd = new Command(RedisCommandType.UNKNOWN, list3);
     assertThat(cmd.getCommandType()).isNotNull();
     assertThat(cmd.getCommandType()).isEqualTo(RedisCommandType.HEXISTS);
     assertThat(cmd.getProcessedCommand()).isEqualTo(list3);
     assertThat(cmd.getKey()).isNull();
 
     list3.add("Arg1".getBytes(StandardCharsets.UTF_8));
-    cmd = new Command(list3);
+    cmd = new Command(RedisCommandType.UNKNOWN, list3);
     assertThat(cmd.getKey()).isNotNull();
     assertThat(cmd.getStringKey()).isEqualTo("Arg1");
   }

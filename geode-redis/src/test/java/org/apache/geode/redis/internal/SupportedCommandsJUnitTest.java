@@ -246,7 +246,7 @@ public class SupportedCommandsJUnitTest {
       List<byte[]> args = new ArrayList<>();
       args.add(commandName.getBytes());
 
-      Command command = new Command(args);
+      Command command = new Command(RedisCommandType.UNKNOWN, args);
 
       assertThat(command.isSupported())
           .as("Command " + commandName + " should be unsupported")
@@ -260,7 +260,7 @@ public class SupportedCommandsJUnitTest {
       List<byte[]> args = new ArrayList<>();
       args.add(commandName.getBytes());
 
-      Command command = new Command(args);
+      Command command = new Command(RedisCommandType.UNKNOWN, args);
 
       assertThat(command.isSupported())
           .as("Command " + commandName + " should be supported")
@@ -274,7 +274,7 @@ public class SupportedCommandsJUnitTest {
       List<byte[]> args = new ArrayList<>();
       args.add(commandName.getBytes());
 
-      Command command = new Command(args);
+      Command command = new Command(RedisCommandType.UNKNOWN, args);
 
       assertThat(command.isUnimplemented())
           .as("Command " + commandName + " should be unimplemented")

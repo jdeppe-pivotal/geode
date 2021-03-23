@@ -23,7 +23,7 @@ import org.apache.geode.redis.internal.netty.ExecutionHandlerContext;
 public class SpopParameterRequirements implements ParameterRequirements {
   @Override
   public void checkParameters(Command command, ExecutionHandlerContext context) {
-    if (command.getProcessedCommand().size() == 3) {
+    if (command.size() == 3) {
       try {
         Integer.parseInt(new String(command.getProcessedCommand().get(2)));
       } catch (NumberFormatException nex) {
