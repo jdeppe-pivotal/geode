@@ -27,7 +27,7 @@ public class ExactParameterRequirements implements ParameterRequirements {
 
   @Override
   public void checkParameters(Command command, ExecutionHandlerContext executionHandlerContext) {
-    if (command.getProcessedCommand().size() != number) {
+    if (command.size() != number) {
       throw new RedisParametersMismatchException(command.wrongNumberOfArgumentsErrorMessage());
     }
   }
