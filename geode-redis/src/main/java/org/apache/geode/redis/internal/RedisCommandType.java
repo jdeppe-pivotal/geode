@@ -32,6 +32,8 @@ import org.apache.geode.redis.internal.ParameterRequirements.UnspecifiedParamete
 import org.apache.geode.redis.internal.executor.Executor;
 import org.apache.geode.redis.internal.executor.RedisResponse;
 import org.apache.geode.redis.internal.executor.UnknownExecutor;
+import org.apache.geode.redis.internal.executor.client.ClientExecutor;
+import org.apache.geode.redis.internal.executor.cluster.ClusterExecutor;
 import org.apache.geode.redis.internal.executor.connection.AuthExecutor;
 import org.apache.geode.redis.internal.executor.connection.EchoExecutor;
 import org.apache.geode.redis.internal.executor.connection.PingExecutor;
@@ -73,6 +75,7 @@ import org.apache.geode.redis.internal.executor.pubsub.UnsubscribeExecutor;
 import org.apache.geode.redis.internal.executor.server.DBSizeExecutor;
 import org.apache.geode.redis.internal.executor.server.FlushAllExecutor;
 import org.apache.geode.redis.internal.executor.server.InfoExecutor;
+import org.apache.geode.redis.internal.executor.server.ReadonlyExecutor;
 import org.apache.geode.redis.internal.executor.server.ShutDownExecutor;
 import org.apache.geode.redis.internal.executor.server.SlowlogExecutor;
 import org.apache.geode.redis.internal.executor.server.TimeExecutor;
@@ -200,6 +203,13 @@ public enum RedisCommandType {
 
   /********** Server **********/
   INFO(new InfoExecutor(), SUPPORTED, new MaximumParameterRequirements(2, ERROR_SYNTAX)),
+
+  /********** Client **********/
+  CLIENT(new ClientExecutor(), SUPPORTED, new MinimumParameterRequirements(1)),
+
+  /********** Cluster **********/
+  CLUSTER(new ClusterExecutor(), SUPPORTED, new MinimumParameterRequirements(1)),
+  READONLY(new ReadonlyExecutor(), SUPPORTED, new MinimumParameterRequirements(1)),
 
   /***************************************
    ********* Internal Commands ***********
