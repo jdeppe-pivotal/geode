@@ -19,6 +19,7 @@ apply from: "${rootDir}/${scriptDir}/standard-subproject-configuration.gradle"
 
 apply from: "${project.projectDir}/../gradle/publish-java.gradle"
 apply from: "${rootDir}/${scriptDir}/warnings.gradle"
+apply from: "${project.projectDir}/../gradle/jmh.gradle"
 
 apply plugin: 'nebula.facet'
 facets {
@@ -59,6 +60,9 @@ dependencies {
   integrationTestImplementation('org.buildobjects:jproc:2.5.1')
   integrationTestRuntime(project(':geode-log4j'))
 
+  // jmhAnnotationProcessor('org.openjdk.jmh:jmh-generator-annprocess:1.26')
+  jmhCompileOnly('org.openjdk.jmh:jmh-generator-annprocess:1.26')
+
   acceptanceTestImplementation(sourceSets.integrationTest.output)
   acceptanceTestImplementation(sourceSets.distributedTest.output)
   acceptanceTestImplementation(sourceSets.commonTest.output)
@@ -95,6 +99,10 @@ dependencies {
 configurations{
   all {
     exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+  }
+
+  jmh {
+    extendsFrom testImplementation
   }
 }
 
