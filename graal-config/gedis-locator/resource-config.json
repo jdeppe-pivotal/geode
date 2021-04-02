@@ -1,0 +1,29 @@
+{
+  "resources":{
+  "includes":[
+    {"pattern":"\\QJGROUPS_VERSION.properties\\E"}, 
+    {"pattern":"\\QMETA-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat\\E"}, 
+    {"pattern":"\\QMETA-INF/services/javax.xml.bind.JAXBContext\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.commons.logging.LogFactory\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.cache.query.internal.cq.spi.CqServiceFactory\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.deployment.internal.JarDeploymentService\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.distributed.internal.DistributedSystemService\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.internal.cache.CacheService\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.internal.cache.client.protocol.ClientProtocolService\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.internal.cache.wan.spi.WANFactory\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.geode.logging.internal.spi.LoggingProvider\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.logging.log4j.core.util.ContextDataProvider\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.logging.log4j.spi.Provider\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.apache.logging.log4j.util.PropertySource\\E"}, 
+    {"pattern":"\\QMETA-INF/services/org.springframework.shell.core.CommandMarker\\E"}, 
+    {"pattern":"\\Qcom/sun/jna/darwin/libjnidispatch.jnilib\\E"}, 
+    {"pattern":"\\Qjg-magic-map.xml\\E"}, 
+    {"pattern":"\\Qjg-protocol-ids.xml\\E"}, 
+    {"pattern":"\\Qlog4j2.xml\\E"}, 
+    {"pattern":"\\Qorg/apache/geode/distributed/internal/membership/gms/messenger/jgroups-config.xml\\E"}, 
+    {"pattern":"\\Qorg/apache/geode/internal/GemFireVersion.properties\\E"}, 
+    {"pattern":"\\Qorg/eclipse/jetty/version/build.properties\\E"}, 
+    {"pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"}
+  ]},
+  "bundles":[{"name":"jg-messages"}]
+}

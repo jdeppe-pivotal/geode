@@ -1,0 +1,8 @@
+[
+  {
+  "name":"org.apache.geode.management.internal.configuration.functions.GetClusterConfigurationFunction"
+  },
+  {
+  "name":"javax.management.ObjectName"
+  }
+]

@@ -1,0 +1,15 @@
+[
+  ["com.fasterxml.jackson.annotation.JsonIgnore","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["com.fasterxml.jackson.annotation.JsonProperty","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["java.lang.Deprecated","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["java.util.function.Consumer"],
+  ["javax.xml.bind.annotation.XmlAccessorType","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["javax.xml.bind.annotation.XmlAnyElement","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["javax.xml.bind.annotation.XmlEnumValue","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["javax.xml.bind.annotation.XmlSeeAlso","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter","com.sun.xml.bind.v2.model.annotation.Locatable"],
+  ["org.apache.geode.cache.lucene.management.LuceneServiceMXBean","org.apache.geode.management.internal.ProxyInterface","org.apache.geode.management.internal.NotificationBroadCasterProxy"],
+  ["org.apache.geode.management.CacheServerMXBean","org.apache.geode.management.internal.ProxyInterface","org.apache.geode.management.internal.NotificationBroadCasterProxy"],
+  ["org.apache.geode.management.MemberMXBean","org.apache.geode.management.internal.ProxyInterface","org.apache.geode.management.internal.NotificationBroadCasterProxy"],
+  ["org.apache.geode.management.RegionMXBean","org.apache.geode.management.internal.ProxyInterface","org.apache.geode.management.internal.NotificationBroadCasterProxy"]
+]
