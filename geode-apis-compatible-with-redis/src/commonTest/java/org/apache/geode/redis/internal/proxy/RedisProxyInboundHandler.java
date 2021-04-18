@@ -148,7 +148,9 @@ public class RedisProxyInboundHandler extends ChannelInboundHandlerAdapter {
 
   @Override
   public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-    cause.printStackTrace();
+    if (!cause.getMessage().contains("Connection reset by peer")) {
+      logger.info(cause);
+    }
     closeOnFlush(ctx.channel());
   }
 
