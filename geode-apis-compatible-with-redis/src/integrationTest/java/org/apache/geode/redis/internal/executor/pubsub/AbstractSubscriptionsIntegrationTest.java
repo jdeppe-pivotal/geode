@@ -26,7 +26,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.redis.mocks.MockSubscriber;
@@ -38,14 +39,14 @@ public abstract class AbstractSubscriptionsIntegrationTest implements RedisPortS
 
   public static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
-  private Jedis client;
+  private JedisCluster client;
 
   @ClassRule
   public static ExecutorServiceRule executor = new ExecutorServiceRule();
 
   @Before
   public void setUp() {
-    client = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    client = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After
@@ -85,11 +86,11 @@ public abstract class AbstractSubscriptionsIntegrationTest implements RedisPortS
 
   @Test
   public void unallowedCommandsWhileSubscribed() {
-    client.sendCommand(Protocol.Command.SUBSCRIBE, "hello");
+    client.sendCommand("hello", Protocol.Command.SUBSCRIBE, "hello");
 
     assertThatThrownBy(() -> client.set("not", "supported")).hasMessageContaining(
         "ERR only (P)SUBSCRIBE / (P)UNSUBSCRIBE / PING / QUIT allowed in this context");
-    client.sendCommand(Protocol.Command.UNSUBSCRIBE);
+    client.sendCommand("hello", Protocol.Command.UNSUBSCRIBE);
   }
 
   @Test
@@ -101,7 +102,8 @@ public abstract class AbstractSubscriptionsIntegrationTest implements RedisPortS
     mockSubscriber.psubscribe("sam*");
     mockSubscriber.awaitPSubscribe("sam*");
 
-    Jedis publisher = new Jedis("localhost", getPort());
+    JedisCluster publisher =
+        new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
     long publishCount = publisher.publish("same", "message");
 
     assertThat(publishCount).isEqualTo(2L);
@@ -115,7 +117,8 @@ public abstract class AbstractSubscriptionsIntegrationTest implements RedisPortS
 
   @Test
   public void unsubscribingImplicitlyFromAllChannels_doesNotUnsubscribeFromPatterns() {
-    Jedis publisher = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    JedisCluster publisher =
+        new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
     MockSubscriber mockSubscriber = new MockSubscriber();
 
     executor.submit(() -> client.subscribe(mockSubscriber, "salutations", "yuletide"));
@@ -157,7 +160,8 @@ public abstract class AbstractSubscriptionsIntegrationTest implements RedisPortS
 
   @Test
   public void punsubscribingImplicitlyFromAllPatterns_doesNotUnsubscribeFromChannels() {
-    Jedis publisher = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    JedisCluster publisher =
+        new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
     MockSubscriber mockSubscriber = new MockSubscriber();
 
     executor.submit(() -> client.psubscribe(mockSubscriber, "p*", "g*"));

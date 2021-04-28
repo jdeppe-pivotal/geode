@@ -24,7 +24,10 @@ import io.lettuce.core.RedisClient;
 import io.lettuce.core.RedisURI;
 import org.junit.After;
 import org.junit.Test;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.cache.CacheFactory;
@@ -34,11 +37,15 @@ import org.apache.geode.distributed.internal.InternalDistributedSystem;
 import org.apache.geode.internal.AvailablePortHelper;
 import org.apache.geode.internal.cache.InternalCache;
 import org.apache.geode.redis.internal.GeodeRedisServer;
+import org.apache.geode.test.awaitility.GeodeAwaitility;
 
 public class AuthIntegrationTest {
 
+  private static final int REDIS_CLIENT_TIMEOUT =
+      Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
+
   static final String PASSWORD = "pwd";
-  Jedis jedis;
+  JedisCluster jedis;
   GeodeRedisServer server;
   GemFireCache cache;
   int port;
@@ -62,7 +69,8 @@ public class AuthIntegrationTest {
     cf.set(ConfigurationProperties.REDIS_PASSWORD, PASSWORD);
     cache = cf.create();
     server = new GeodeRedisServer("localhost", port, (InternalCache) cache);
-    this.jedis = new Jedis("localhost", port, 100000);
+    jedis = new JedisCluster(new HostAndPort("localhost", port), REDIS_CLIENT_TIMEOUT,
+        REDIS_CLIENT_TIMEOUT, 1, PASSWORD, new JedisPoolConfig());
   }
 
   public void setupCacheWithoutPassword() {
@@ -73,16 +81,18 @@ public class AuthIntegrationTest {
     cf.set(LOCATORS, "");
     cache = cf.create();
     server = new GeodeRedisServer("localhost", port, (InternalCache) cache);
-    this.jedis = new Jedis("localhost", port, 100000);
+    jedis = new JedisCluster(new HostAndPort("localhost", port), REDIS_CLIENT_TIMEOUT);
   }
 
   @Test
   public void testAuthIncorrectNumberOfArguments() {
     setupCacheWithPassword();
-    assertThatThrownBy(() -> jedis.sendCommand(Protocol.Command.AUTH))
+    Jedis vanillaJedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    assertThatThrownBy(() -> vanillaJedis.sendCommand(Protocol.Command.AUTH))
         .hasMessageContaining("wrong number of arguments");
-    assertThatThrownBy(() -> jedis.sendCommand(Protocol.Command.AUTH, "fhqwhgads", "extraArg"))
-        .hasMessageContaining("wrong number of arguments");
+    assertThatThrownBy(
+        () -> vanillaJedis.sendCommand(Protocol.Command.AUTH, "fhqwhgads", "extraArg"))
+            .hasMessageContaining("wrong number of arguments");
   }
 
   @Test
@@ -96,17 +106,19 @@ public class AuthIntegrationTest {
   public void testAuthRejectAccept() {
     setupCacheWithPassword();
 
-    assertThatThrownBy(() -> jedis.auth("wrongpwd"))
+    Jedis vanillaJedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    assertThatThrownBy(() -> vanillaJedis.auth("wrongpwd"))
         .hasMessageContaining("ERR invalid password");
 
-    assertThat(jedis.auth(PASSWORD)).isEqualTo("OK");
+    assertThat(vanillaJedis.auth(PASSWORD)).isEqualTo("OK");
   }
 
   @Test
   public void testAuthNoPwd() {
     setupCacheWithoutPassword();
 
-    assertThatThrownBy(() -> jedis.auth(PASSWORD))
+    Jedis vanillaJedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    assertThatThrownBy(() -> vanillaJedis.auth(PASSWORD))
         .hasMessage("ERR Client sent AUTH, but no password is set");
   }
 
@@ -114,10 +126,11 @@ public class AuthIntegrationTest {
   public void testAuthAcceptRequests() {
     setupCacheWithPassword();
 
-    assertThatThrownBy(() -> jedis.set("foo", "bar"))
+    Jedis vanillaJedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    assertThatThrownBy(() -> vanillaJedis.set("foo", "bar"))
         .hasMessage("NOAUTH Authentication required.");
 
-    String res = jedis.auth(PASSWORD);
+    String res = vanillaJedis.auth(PASSWORD);
     assertThat(res).isEqualTo("OK");
 
     jedis.set("foo", "bar"); // No exception

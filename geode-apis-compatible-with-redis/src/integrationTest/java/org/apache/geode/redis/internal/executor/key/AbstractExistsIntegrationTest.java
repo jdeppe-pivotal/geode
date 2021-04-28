@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.redis.ConcurrentLoopingThreads;
@@ -32,22 +33,22 @@ import org.apache.geode.test.dunit.rules.RedisPortSupplier;
 
 public abstract class AbstractExistsIntegrationTest implements RedisPortSupplier {
 
-  private Jedis jedis;
-  private Jedis jedis2;
-  private Jedis jedis3;
+  private JedisCluster jedis;
+  private JedisCluster jedis2;
+  private JedisCluster jedis3;
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
-    jedis2 = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
-    jedis3 = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
+    jedis2 = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
+    jedis3 = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After
   public void tearDown() {
-    jedis.flushAll();
+    jedis.getConnectionFromSlot(0).flushAll();
     jedis.close();
     jedis2.close();
     jedis3.close();
@@ -151,13 +152,14 @@ public abstract class AbstractExistsIntegrationTest implements RedisPortSupplier
 
   @Test
   public void shouldReturnTotalNumber_givenMultipleKeys() {
-    String key1 = "key1";
-    String key2 = "key2";
+    String key1 = "{user1}key1";
+    String key2 = "{user1}key2";
 
     jedis.set(key1, "value1");
     jedis.set(key2, "value2");
 
-    assertThat(jedis.exists(toArray(key1, "doesNotExist1", key2, "doesNotExist2"))).isEqualTo(2L);
+    assertThat(jedis.exists(toArray(key1, "{user1}doesNotExist1", key2, "{user1}doesNotExist2")))
+        .isEqualTo(2L);
   }
 
   @Test

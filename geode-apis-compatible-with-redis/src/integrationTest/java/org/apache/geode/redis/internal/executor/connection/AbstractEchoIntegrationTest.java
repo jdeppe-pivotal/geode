@@ -21,7 +21,8 @@ import static org.apache.geode.redis.RedisCommandArgumentsTestHelper.assertExact
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.test.awaitility.GeodeAwaitility;
@@ -31,11 +32,11 @@ public abstract class AbstractEchoIntegrationTest implements RedisPortSupplier {
 
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
-  private static Jedis jedis;
+  private static JedisCluster jedis;
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After

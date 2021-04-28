@@ -25,26 +25,29 @@ import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.Protocol;
 
 import org.apache.geode.redis.ConcurrentLoopingThreads;
 import org.apache.geode.test.dunit.rules.RedisPortSupplier;
 
 public abstract class AbstractAppendIntegrationTest implements RedisPortSupplier {
 
-  private Jedis jedis;
-  private Jedis jedis2;
+  private JedisCluster jedis;
+  private JedisCluster jedis2;
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", getPort(), 10000000);
-    jedis2 = new Jedis("localhost", getPort(), 10000000);
+    jedis = new JedisCluster(new HostAndPort("localhost", getPort()), 10000000);
+    jedis2 = new JedisCluster(new HostAndPort("localhost", getPort()), 10000000);
   }
 
   @After
   public void flushAll() {
-    jedis.flushAll();
+    jedis.sendCommand("key", Protocol.Command.FLUSHALL);
     jedis.close();
+    jedis2.close();
   }
 
   @Test

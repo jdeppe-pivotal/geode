@@ -26,7 +26,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.redis.ConcurrentLoopingThreads;
@@ -35,8 +36,8 @@ import org.apache.geode.test.dunit.rules.RedisPortSupplier;
 
 public abstract class AbstractIncrByIntegrationTest implements RedisPortSupplier {
 
-  private Jedis jedis1;
-  private Jedis jedis2;
+  private JedisCluster jedis1;
+  private JedisCluster jedis2;
   private Random rand;
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
@@ -45,15 +46,14 @@ public abstract class AbstractIncrByIntegrationTest implements RedisPortSupplier
   public void setUp() {
     rand = new Random();
 
-    jedis1 = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
-    jedis2 = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis1 = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
+    jedis2 = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After
   public void tearDown() {
-    jedis1.flushAll();
+    jedis1.getConnectionFromSlot(0).flushAll();
     jedis1.close();
-    jedis2.flushAll();
     jedis2.close();
   }
 

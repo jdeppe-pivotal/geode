@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 import redis.clients.jedis.params.SetParams;
 
@@ -32,20 +33,20 @@ import org.apache.geode.test.dunit.rules.RedisPortSupplier;
 
 public abstract class AbstractPersistIntegrationTest implements RedisPortSupplier {
 
-  private Jedis jedis;
-  private Jedis jedis2;
+  private JedisCluster jedis;
+  private JedisCluster jedis2;
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
-    jedis2 = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
+    jedis2 = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After
   public void tearDown() {
-    jedis.flushAll();
+    jedis.getConnectionFromSlot(0).flushAll();
     jedis.close();
     jedis2.close();
   }
@@ -131,7 +132,7 @@ public abstract class AbstractPersistIntegrationTest implements RedisPortSupplie
     assertThat(persistedFromThread1.get() + persistedFromThread2.get()).isEqualTo(iterationCount);
   }
 
-  private void setKeysWithExpiration(Jedis jedis, int iterationCount) {
+  private void setKeysWithExpiration(JedisCluster jedis, int iterationCount) {
     for (int i = 0; i < iterationCount; i++) {
       SetParams setParams = new SetParams();
       setParams.ex(600);
@@ -140,7 +141,7 @@ public abstract class AbstractPersistIntegrationTest implements RedisPortSupplie
     }
   }
 
-  private void persistKeys(AtomicLong atomicLong, Jedis jedis, int iterationCount) {
+  private void persistKeys(AtomicLong atomicLong, JedisCluster jedis, int iterationCount) {
     for (int i = 0; i < iterationCount; i++) {
       String key = "key" + i;
       atomicLong.addAndGet(jedis.persist(key));

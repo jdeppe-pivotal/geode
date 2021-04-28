@@ -23,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.test.awaitility.GeodeAwaitility;
@@ -31,18 +32,18 @@ import org.apache.geode.test.dunit.rules.RedisPortSupplier;
 
 public abstract class AbstractPexpireIntegrationTest implements RedisPortSupplier {
 
-  private Jedis jedis;
+  private JedisCluster jedis;
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After
   public void teardown() {
-    jedis.flushAll();
+    jedis.getConnectionFromSlot(0).flushAll();
     jedis.close();
   }
 
@@ -53,8 +54,9 @@ public abstract class AbstractPexpireIntegrationTest implements RedisPortSupplie
 
   @Test
   public void givenInvalidTimestamp_returnsNotIntegerError() {
-    assertThatThrownBy(() -> jedis.sendCommand(Protocol.Command.PEXPIRE, "key", "notInteger"))
-        .hasMessageContaining(ERROR_NOT_INTEGER);
+    assertThatThrownBy(() -> jedis
+        .sendCommand("key", Protocol.Command.PEXPIRE, "key", "notInteger"))
+            .hasMessageContaining(ERROR_NOT_INTEGER);
   }
 
   @Test
@@ -98,9 +100,9 @@ public abstract class AbstractPexpireIntegrationTest implements RedisPortSupplie
 
   @Test
   public void should_passivelyExpireKeys() {
-    jedis.sadd("key", "value");
-    jedis.pexpire("key", 100);
+    jedis.sadd("{user100}key", "value");
+    jedis.pexpire("{user100}key", 100);
 
-    GeodeAwaitility.await().until(() -> jedis.keys("key").isEmpty());
+    GeodeAwaitility.await().until(() -> jedis.keys("{user100}key").isEmpty());
   }
 }

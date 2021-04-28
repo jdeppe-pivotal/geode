@@ -22,7 +22,8 @@ import java.util.stream.IntStream;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Protocol;
 
 import org.apache.geode.redis.ConcurrentLoopingThreads;
@@ -31,18 +32,18 @@ import org.apache.geode.test.dunit.rules.RedisPortSupplier;
 
 public abstract class AbstractMGetIntegrationTest implements RedisPortSupplier {
 
-  private Jedis jedis;
+  private JedisCluster jedis;
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis = new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @After
   public void tearDown() {
-    jedis.flushAll();
+    jedis.getConnectionFromSlot(0).flushAll();
     jedis.close();
   }
 
@@ -53,8 +54,8 @@ public abstract class AbstractMGetIntegrationTest implements RedisPortSupplier {
 
   @Test
   public void testMGet_requestNonexistentKey_respondsWithNil() {
-    String key1 = "existingKey";
-    String key2 = "notReallyAKey";
+    String key1 = "{user1}existingKey";
+    String key2 = "{user1}notReallyAKey";
     String value1 = "theRealValue";
     String[] keys = new String[2];
     String[] expectedVals = new String[2];
@@ -70,19 +71,20 @@ public abstract class AbstractMGetIntegrationTest implements RedisPortSupplier {
 
   @Test
   public void testMget_returnsNil_forNonStringKey() {
-    jedis.sadd("set", "a");
-    jedis.hset("hash", "a", "b");
-    jedis.set("string", "ok");
+    jedis.sadd("{user1}set", "a");
+    jedis.hset("{user1}hash", "a", "b");
+    jedis.set("{user1}string", "ok");
 
-    assertThat(jedis.mget("set", "hash", "string"))
+    assertThat(jedis.mget("{user1}set", "{user1}hash", "{user1}string"))
         .containsExactly(null, null, "ok");
   }
 
   @Test
   public void testMget_whileConcurrentUpdates() {
-    Jedis jedis2 = new Jedis("localhost", getPort(), REDIS_CLIENT_TIMEOUT);
+    JedisCluster jedis2 =
+        new JedisCluster(new HostAndPort("localhost", getPort()), REDIS_CLIENT_TIMEOUT);
     String[] keys = IntStream.range(0, 10)
-        .mapToObj(x -> "key-" + x)
+        .mapToObj(x -> "{user1}key-" + x)
         .toArray(String[]::new);
 
     // Should not result in any exceptions

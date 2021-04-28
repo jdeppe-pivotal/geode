@@ -24,7 +24,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
-import redis.clients.jedis.Jedis;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.commands.ProtocolCommand;
 import redis.clients.jedis.util.SafeEncoder;
 
@@ -33,7 +34,7 @@ import org.apache.geode.test.awaitility.GeodeAwaitility;
 
 public class UnsupportedCommandsIntegrationTest {
 
-  private static Jedis jedis;
+  private static JedisCluster jedis;
 
   private static final int REDIS_CLIENT_TIMEOUT =
       Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
@@ -43,7 +44,7 @@ public class UnsupportedCommandsIntegrationTest {
 
   @Before
   public void setUp() {
-    jedis = new Jedis("localhost", server.getPort(), REDIS_CLIENT_TIMEOUT);
+    jedis = new JedisCluster(new HostAndPort("localhost", server.getPort()), REDIS_CLIENT_TIMEOUT);
   }
 
   @Test
@@ -84,7 +85,7 @@ public class UnsupportedCommandsIntegrationTest {
             "`" + TEST_PARAMETER + "`");
 
     assertThatThrownBy(
-        () -> jedis.sendCommand(InternalCommands.INTERNALPTTL, TEST_PARAMETER))
+        () -> jedis.sendCommand("key", InternalCommands.INTERNALPTTL, TEST_PARAMETER))
             .hasMessageContaining(EXPECTED_ERROR_MSG);
   }
 
@@ -98,14 +99,14 @@ public class UnsupportedCommandsIntegrationTest {
             "`" + TEST_PARAMETER + "`");
 
     assertThatThrownBy(
-        () -> jedis.sendCommand(InternalCommands.INTERNALTYPE, TEST_PARAMETER))
+        () -> jedis.sendCommand("key", InternalCommands.INTERNALTYPE, TEST_PARAMETER))
             .hasMessageContaining(EXPECTED_ERROR_MSG);
   }
 
   @After
   public void tearDown() {
     server.setEnableUnsupportedCommands(true);
-    jedis.flushAll();
+    jedis.getConnectionFromSlot(0).flushAll();
   }
 
   @AfterClass

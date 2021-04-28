@@ -29,11 +29,15 @@ import org.apache.geode.distributed.internal.InternalDistributedSystem;
 import org.apache.geode.internal.net.SSLConfig;
 import org.apache.geode.internal.net.SSLConfigurationFactory;
 import org.apache.geode.internal.security.SecurableCommunicationChannel;
+import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.junit.categories.RedisTest;
 import org.apache.geode.test.junit.rules.ServerStarterRule;
 
 @Category({RedisTest.class})
 public class SSLTest {
+
+  private static final int REDIS_CLIENT_TIMEOUT =
+      Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   @Rule
   public RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
@@ -46,7 +50,6 @@ public class SSLTest {
       .withProperty("compatible-with-redis-enabled", "true")
       .withAutoStart();
 
-
   @Test
   public void canConnectOverSSL() {
     SSLConfig sslConfigForComponent = SSLConfigurationFactory.getSSLConfigForComponent(
@@ -57,7 +60,7 @@ public class SSLTest {
     System.setProperty("javax.net.ssl.trustStore", sslConfigForComponent.getTruststore());
     System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 
-    Jedis localhost = new Jedis("localhost", 11211, true);
+    Jedis localhost = new Jedis("localhost", 11211, REDIS_CLIENT_TIMEOUT, true);
 
     assertThat(localhost.ping()).isEqualTo("PONG");
   }
@@ -72,7 +75,7 @@ public class SSLTest {
     System.setProperty("javax.net.ssl.trustStore", sslConfigForComponent.getTruststore());
     System.setProperty("javax.net.ssl.trustStoreType", "JKS");
 
-    Jedis localhost = new Jedis("localhost", 11211, false);
+    Jedis localhost = new Jedis("localhost", 11211, REDIS_CLIENT_TIMEOUT, false);
 
     assertThatThrownBy(() -> localhost.ping());
   }
