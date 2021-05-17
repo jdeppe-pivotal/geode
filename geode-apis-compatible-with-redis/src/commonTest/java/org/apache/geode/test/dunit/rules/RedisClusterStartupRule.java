@@ -22,6 +22,10 @@ import static org.apache.geode.distributed.ConfigurationProperties.REDIS_PORT;
 
 import java.util.Properties;
 
+import redis.clients.jedis.Jedis;
+
+import org.apache.geode.redis.ClusterNode;
+import org.apache.geode.redis.ClusterNodes;
 import org.apache.geode.redis.internal.GeodeRedisServer;
 import org.apache.geode.redis.internal.GeodeRedisService;
 import org.apache.geode.test.junit.rules.ServerStarterRule;
@@ -101,5 +105,21 @@ public class RedisClusterStartupRule extends ClusterStartupRule {
       GeodeRedisService service = ClusterStartupRule.getCache().getService(GeodeRedisService.class);
       return service.getDataStoreBytesInUseForDataRegion();
     });
+  }
+
+  public void flushAll(int redisPort) {
+    ClusterNodes nodes;
+    try (Jedis jedis = new Jedis("localhost", redisPort)) {
+      nodes = ClusterNodes.parseClusterNodes(jedis.clusterNodes());
+    }
+
+    for (ClusterNode node : nodes.getNodes()) {
+      if (!node.primary) {
+        continue;
+      }
+      try (Jedis jedis = new Jedis(node.ipAddress, (int) node.port)) {
+        jedis.flushAll();
+      }
+    }
   }
 }
