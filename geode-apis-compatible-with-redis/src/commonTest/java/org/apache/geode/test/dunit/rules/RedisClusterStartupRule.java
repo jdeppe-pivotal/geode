@@ -28,9 +28,13 @@ import org.apache.geode.redis.ClusterNode;
 import org.apache.geode.redis.ClusterNodes;
 import org.apache.geode.redis.internal.GeodeRedisServer;
 import org.apache.geode.redis.internal.GeodeRedisService;
+import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.junit.rules.ServerStarterRule;
 
 public class RedisClusterStartupRule extends ClusterStartupRule {
+
+  private static final int REDIS_CLIENT_TIMEOUT =
+      Math.toIntExact(GeodeAwaitility.getTimeout().toMillis());
 
   private static final String BIND_ADDRESS = "127.0.0.1";
   public static final String DEFAULT_MAX_WAIT_TIME_RECONNECT = "15000";
@@ -109,7 +113,7 @@ public class RedisClusterStartupRule extends ClusterStartupRule {
 
   public void flushAll(int redisPort) {
     ClusterNodes nodes;
-    try (Jedis jedis = new Jedis("localhost", redisPort)) {
+    try (Jedis jedis = new Jedis("localhost", redisPort, REDIS_CLIENT_TIMEOUT)) {
       nodes = ClusterNodes.parseClusterNodes(jedis.clusterNodes());
     }
 
@@ -117,7 +121,7 @@ public class RedisClusterStartupRule extends ClusterStartupRule {
       if (!node.primary) {
         continue;
       }
-      try (Jedis jedis = new Jedis(node.ipAddress, (int) node.port)) {
+      try (Jedis jedis = new Jedis(node.ipAddress, (int) node.port, REDIS_CLIENT_TIMEOUT)) {
         jedis.flushAll();
       }
     }
