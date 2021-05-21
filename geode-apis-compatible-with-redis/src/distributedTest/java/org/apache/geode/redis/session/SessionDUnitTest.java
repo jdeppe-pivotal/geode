@@ -136,7 +136,7 @@ public abstract class SessionDUnitTest {
   @After
   public void cleanupAfterTest() {
     GeodeAwaitility.await().ignoreExceptions()
-        .untilAsserted(() -> cluster.getRedisPort(ports.get(SERVER1)));
+        .untilAsserted(() -> cluster.flushAll(ports.get(SERVER1)));
   }
 
   protected static void startRedisServer(int server) {
