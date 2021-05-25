@@ -26,10 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.logging.log4j.Logger;
+
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.partition.PartitionMemberInfo;
 import org.apache.geode.cache.partition.PartitionRegionHelper;
 import org.apache.geode.cache.partition.PartitionRegionInfo;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.redis.internal.SlotAdvisor;
 import org.apache.geode.redis.internal.data.RedisData;
 import org.apache.geode.redis.internal.data.RedisKey;
@@ -39,6 +42,8 @@ import org.apache.geode.redis.internal.netty.Command;
 import org.apache.geode.redis.internal.netty.ExecutionHandlerContext;
 
 public class ClusterExecutor extends AbstractExecutor {
+
+  private static final Logger logger = LogService.getLogger();
 
   @Override
   public RedisResponse executeCommand(Command command, ExecutionHandlerContext context)
@@ -105,6 +110,7 @@ public class ClusterExecutor extends AbstractExecutor {
       List<Integer> buckets = member.getValue();
       SlotAdvisor.MemberBucketSlot mbs = memberBucketSlots.get(buckets.get(0));
       if (mbs == null) {
+        logger.error("---||| Unable to find MemberBucketSlot for bucket {}", buckets.get(0));
         continue;
       }
 

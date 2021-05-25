@@ -117,6 +117,7 @@ public class SlotAdvisor {
       if (memberInfo == null) {
         continue;
       }
+      logger.info("---||| Received MemberInfo {}", memberInfo);
       this.memberInfos.put(memberInfo.getMember(), memberInfo);
     }
 
