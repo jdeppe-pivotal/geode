@@ -35,6 +35,7 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.JavaVersion;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.SystemUtils;
 
 import org.apache.geode.distributed.ConfigurationProperties;
@@ -49,6 +50,7 @@ class ProcessManager implements ChildVMLauncher {
   private File log4jConfig;
   private int pendingVMs;
   private Registry registry;
+  private String shortId;
   private int debugPort = Integer.getInteger("dunit.debug.basePort", 0);
   private int suspendVM = Integer.getInteger("dunit.debug.suspendVM", -100);
   private VersionManager versionManager;
@@ -57,6 +59,7 @@ class ProcessManager implements ChildVMLauncher {
     this.versionManager = VersionManager.getInstance();
     this.namingPort = namingPort;
     this.registry = registry;
+    this.shortId = RandomStringUtils.random(4, "0123456789abcdef");
   }
 
   public synchronized void launchVM(int vmNum) throws IOException {
@@ -143,7 +146,7 @@ class ProcessManager implements ChildVMLauncher {
 
   private void linkStreams(final String version, final int vmNum, final ProcessHolder holder,
       final InputStream in, final PrintStream out) {
-    final String vmName = "[" + VM.getVMName(version, vmNum) + "] ";
+    final String vmName = "[" + VM.getVMName(version, vmNum) + "-" + shortId + "] ";
     Thread ioTransport = new Thread() {
       @Override
       public void run() {
