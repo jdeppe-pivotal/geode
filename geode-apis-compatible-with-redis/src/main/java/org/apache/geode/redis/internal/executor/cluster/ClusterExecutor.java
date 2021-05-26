@@ -111,7 +111,6 @@ public class ClusterExecutor extends AbstractExecutor {
       List<Integer> buckets = member.getValue();
       SlotAdvisor.MemberBucketSlot mbs = memberBucketSlots.get(buckets.get(0));
       if (mbs == null) {
-        logger.error("---||| Unable to find MemberBucketSlot for bucket {}", buckets.get(0));
         continue;
       }
 
