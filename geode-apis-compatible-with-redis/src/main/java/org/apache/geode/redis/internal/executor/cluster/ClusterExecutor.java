@@ -106,6 +106,7 @@ public class ClusterExecutor extends AbstractExecutor {
     Map<String, List<Integer>> memberBuckets = getMemberBuckets(memberBucketSlots);
 
     StringBuilder response = new StringBuilder();
+    int porty = 0;
     for (Map.Entry<String, List<Integer>> member : memberBuckets.entrySet()) {
       List<Integer> buckets = member.getValue();
       SlotAdvisor.MemberBucketSlot mbs = memberBucketSlots.get(buckets.get(0));
@@ -113,6 +114,11 @@ public class ClusterExecutor extends AbstractExecutor {
         logger.error("---||| Unable to find MemberBucketSlot for bucket {}", buckets.get(0));
         continue;
       }
+
+      if (porty == mbs.getPrimaryPort()) {
+        logger.error("---||| Ports are identical");
+      }
+      porty = mbs.getPrimaryPort();
 
       response.append(String.format("%s %s:%3$d@%3$d master",
           member.getKey(), mbs.getPrimaryIpAddress(), mbs.getPrimaryPort()));
