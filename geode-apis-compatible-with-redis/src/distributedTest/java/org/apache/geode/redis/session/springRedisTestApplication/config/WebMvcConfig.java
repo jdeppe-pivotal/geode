@@ -21,16 +21,24 @@ import java.util.Arrays;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import org.springframework.boot.ApplicationArguments;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.redis.connection.RedisClusterConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceClientConfiguration;
 import org.springframework.data.redis.connection.lettuce.LettuceConnectionFactory;
 import org.springframework.session.data.redis.config.ConfigureRedisAction;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class WebMvcConfig implements WebMvcConfigurer {
+
+  @Bean
+  public RestTemplate restTemplate(RestTemplateBuilder restTemplateBuilder) {
+    return restTemplateBuilder.errorHandler(new RestTemplateResponseErrorHandler())
+        .build();
+  }
 
   @Bean
   public static ConfigureRedisAction configureRedisAction() {
