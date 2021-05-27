@@ -50,6 +50,7 @@ public class ZAddDUnitTest {
   private static MemberVM server1;
   private static MemberVM server2;
   private static MemberVM server3;
+  private static int redisServerPort;
 
   @BeforeClass
   public static void classSetup() {
