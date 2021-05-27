@@ -20,13 +20,19 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.apache.logging.log4j.Logger;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.apache.geode.logging.internal.log4j.api.LogService;
+
 @RestController
 public class SessionController {
+
+  private static final Logger logger = LogService.getLogger();
+
   @SuppressWarnings("unchecked")
   @GetMapping("/getSessionNotes")
   public List<String> getSessionNotes(HttpServletRequest request) {
@@ -42,15 +48,21 @@ public class SessionController {
   @SuppressWarnings("unchecked")
   @PostMapping("/addSessionNote")
   public void addSessionNote(@RequestBody String note, HttpServletRequest request) {
-    List<String> notes =
-        (List<String>) request.getSession().getAttribute("NOTES");
+    try {
+      List<String> notes =
+          (List<String>) request.getSession().getAttribute("NOTES");
 
-    if (notes == null) {
-      notes = new ArrayList<>();
+      if (notes == null) {
+        notes = new ArrayList<>();
+      }
+
+      notes.add(note);
+      request.getSession().setAttribute("NOTES", notes);
+    } catch (Exception ex) {
+      logger.warn("---||| addSessionNote exception", ex);
+      throw ex;
     }
 
-    notes.add(note);
-    request.getSession().setAttribute("NOTES", notes);
   }
 
   @GetMapping("/getSessionID")
