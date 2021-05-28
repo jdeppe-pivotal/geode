@@ -31,6 +31,7 @@ import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
+import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -253,7 +254,8 @@ public abstract class SessionDUnitTest {
 
     @Override
     public void handleError(ClientHttpResponse response) throws IOException {
-      logger.error("RestTemplate error: {}", response.getBody());
+      byte[] body = IOUtils.toByteArray(response.getBody());
+      logger.error("RestTemplate error: {}", new String(body));
     }
   }
 }
