@@ -16,6 +16,7 @@
 package org.apache.geode.redis.session;
 
 
+import java.io.IOException;
 import java.net.HttpCookie;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -41,15 +42,19 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 import org.apache.geode.internal.AvailablePortHelper;
 import org.apache.geode.logging.internal.log4j.api.FastLogger;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.redis.session.springRedisTestApplication.RedisSpringTestApplication;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.dunit.VM;
@@ -224,17 +229,31 @@ public abstract class SessionDUnitTest {
     List<String> notes = new ArrayList<>();
     Collections.addAll(notes, getSessionNotes(sessionApp, sessionCookie));
     HttpEntity<String> request = new HttpEntity<>(note, requestHeaders);
-    new RestTemplate()
-        .postForEntity(
-            "http://localhost:" + ports.get(sessionApp) + "/addSessionNote",
-            request,
-            String.class)
-        .getHeaders();
+    RestTemplate template =
+        new RestTemplateBuilder().errorHandler(new InternalResponseErrorHandler()).build();
+    template.postForEntity(
+        "http://localhost:" + ports.get(sessionApp) + "/addSessionNote",
+        request,
+        String.class);
   }
 
   protected String getSessionId(String sessionCookie) {
     List<HttpCookie> cookies = HttpCookie.parse(sessionCookie);
     byte[] decodedCookie = Base64.getDecoder().decode(cookies.get(0).getValue());
     return new String(decodedCookie);
+  }
+
+  private static class InternalResponseErrorHandler implements ResponseErrorHandler {
+    private static final Logger logger = LogService.getLogger();
+
+    @Override
+    public boolean hasError(ClientHttpResponse response) throws IOException {
+      return response.getStatusCode().is5xxServerError();
+    }
+
+    @Override
+    public void handleError(ClientHttpResponse response) throws IOException {
+      logger.error("RestTemplate error: {}", response.getBody());
+    }
   }
 }
