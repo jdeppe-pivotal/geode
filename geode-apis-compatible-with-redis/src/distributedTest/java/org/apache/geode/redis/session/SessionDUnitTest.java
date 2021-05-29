@@ -16,7 +16,6 @@
 package org.apache.geode.redis.session;
 
 
-import java.io.IOException;
 import java.net.HttpCookie;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -31,7 +30,6 @@ import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import org.apache.commons.io.IOUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -43,19 +41,15 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestTemplate;
 
 import org.apache.geode.internal.AvailablePortHelper;
 import org.apache.geode.logging.internal.log4j.api.FastLogger;
-import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.redis.session.springRedisTestApplication.RedisSpringTestApplication;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.dunit.VM;
@@ -226,17 +220,22 @@ public abstract class SessionDUnitTest {
   }
 
   void addNoteToSession(int sessionApp, String sessionCookie, String note) {
+    try {
+      addNoteToSession0(sessionApp, sessionCookie, note);
+    } catch (Exception ex) {
+      addNoteToSession0(sessionApp, sessionCookie, note);
+    }
+  }
+
+  private void addNoteToSession0(int sessionApp, String sessionCookie, String note) {
     HttpHeaders requestHeaders = new HttpHeaders();
     requestHeaders.add("Cookie", sessionCookie);
     List<String> notes = new ArrayList<>();
     Collections.addAll(notes, getSessionNotes(sessionApp, sessionCookie));
     HttpEntity<String> request = new HttpEntity<>(note, requestHeaders);
-    RestTemplate template =
-        new RestTemplateBuilder().errorHandler(new InternalResponseErrorHandler()).build();
-    template.postForEntity(
-        "http://localhost:" + ports.get(sessionApp) + "/addSessionNote",
-        request,
-        String.class);
+    new RestTemplate()
+        .postForEntity("http://localhost:" + ports.get(sessionApp) + "/addSessionNote",
+            request, String.class);
   }
 
   protected String getSessionId(String sessionCookie) {
@@ -245,18 +244,4 @@ public abstract class SessionDUnitTest {
     return new String(decodedCookie);
   }
 
-  private static class InternalResponseErrorHandler implements ResponseErrorHandler {
-    private static final Logger logger = LogService.getLogger();
-
-    @Override
-    public boolean hasError(ClientHttpResponse response) throws IOException {
-      return response.getStatusCode().is5xxServerError();
-    }
-
-    @Override
-    public void handleError(ClientHttpResponse response) throws IOException {
-      byte[] body = IOUtils.toByteArray(response.getBody());
-      logger.error("RestTemplate error: {}", new String(body));
-    }
-  }
 }
