@@ -91,7 +91,7 @@ public abstract class SessionDUnitTest {
     setupGeodeRedis();
 
     RetryConfig config = RetryConfig.custom()
-        .maxAttempts(3)
+        .maxAttempts(5)
         .retryExceptions(HttpServerErrorException.InternalServerError.class)
         .build();
     RetryRegistry registry = RetryRegistry.of(config);
