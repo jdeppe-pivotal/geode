@@ -87,6 +87,7 @@ dependencies {
   distributedTestImplementation(sourceSets.commonTest.output)
   distributedTestImplementation('redis.clients:jedis')
   distributedTestImplementation('io.lettuce:lettuce-core')
+  distributedTestImplementation('io.github.resilience4j:resilience4j-retry')
 
   distributedTestImplementation('javax.servlet:javax.servlet-api')
   distributedTestImplementation('org.springframework.boot:spring-boot-starter-jetty')

@@ -25,6 +25,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.github.resilience4j.retry.Retry;
+import io.github.resilience4j.retry.RetryConfig;
+import io.github.resilience4j.retry.RetryRegistry;
 import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
@@ -79,11 +82,16 @@ public abstract class SessionDUnitTest {
   private RedisClusterClient redisClient;
   private static StatefulRedisClusterConnection<String, String> connection;
   protected static RedisAdvancedClusterCommands<String, String> commands;
+  private static Retry retry;
 
   @BeforeClass
   public static void setup() {
     setupAppPorts();
     setupGeodeRedis();
+
+    RetryConfig config = RetryConfig.custom().maxAttempts(3).build();
+    RetryRegistry registry = RetryRegistry.of(config);
+    retry = registry.retry("sessions");
   }
 
   protected static void setupAppPorts() {
@@ -170,12 +178,8 @@ public abstract class SessionDUnitTest {
     cluster.getVM(sessionApp).invoke(() -> springApplicationContext.close());
   }
 
-  protected String createNewSessionWithNote(int sessionApp, String note) {
-    try {
-      return createNewSessionWithNote0(sessionApp, note);
-    } catch (Exception ex) {
-      return createNewSessionWithNote0(sessionApp, note);
-    }
+  protected String createNewSessionWithNote(int sessionApp, String note) throws Exception {
+    return Retry.decorateCallable(retry, () -> createNewSessionWithNote0(sessionApp, note)).call();
   }
 
   private String createNewSessionWithNote0(int sessionApp, String note) {
@@ -188,12 +192,8 @@ public abstract class SessionDUnitTest {
     return resultHeaders.getFirst("Set-Cookie");
   }
 
-  protected String[] getSessionNotes(int sessionApp, String sessionCookie) {
-    try {
-      return getSessionNotes0(sessionApp, sessionCookie);
-    } catch (Exception exception) {
-      return getSessionNotes0(sessionApp, sessionCookie);
-    }
+  protected String[] getSessionNotes(int sessionApp, String sessionCookie) throws Exception {
+    return Retry.decorateCallable(retry, () -> getSessionNotes0(sessionApp, sessionCookie)).call();
   }
 
   private String[] getSessionNotes0(int sessionApp, String sessionCookie) {
@@ -207,15 +207,13 @@ public abstract class SessionDUnitTest {
         .getBody();
   }
 
-  void addNoteToSession(int sessionApp, String sessionCookie, String note) {
-    try {
-      addNoteToSession0(sessionApp, sessionCookie, note);
-    } catch (Exception ex) {
-      addNoteToSession0(sessionApp, sessionCookie, note);
-    }
+  void addNoteToSession(int sessionApp, String sessionCookie, String note) throws Exception {
+    Retry.decorateCallable(retry, () -> addNoteToSession0(sessionApp, sessionCookie, note))
+        .call();
   }
 
-  private void addNoteToSession0(int sessionApp, String sessionCookie, String note) {
+  private Void addNoteToSession0(int sessionApp, String sessionCookie, String note)
+      throws Exception {
     HttpHeaders requestHeaders = new HttpHeaders();
     requestHeaders.add("Cookie", sessionCookie);
     List<String> notes = new ArrayList<>();
@@ -224,6 +222,7 @@ public abstract class SessionDUnitTest {
     new RestTemplate()
         .postForEntity("http://localhost:" + ports.get(sessionApp) + "/addSessionNote",
             request, String.class);
+    return null;
   }
 
   protected String getSessionId(String sessionCookie) {
