@@ -48,6 +48,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import org.apache.geode.internal.AvailablePortHelper;
@@ -89,7 +90,9 @@ public abstract class SessionDUnitTest {
     setupAppPorts();
     setupGeodeRedis();
 
-    RetryConfig config = RetryConfig.custom().maxAttempts(5).build();
+    RetryConfig config = RetryConfig.custom().maxAttempts(5)
+        .ignoreExceptions(HttpServerErrorException.InternalServerError.class)
+        .build();
     RetryRegistry registry = RetryRegistry.of(config);
     retry = registry.retry("sessions");
   }
