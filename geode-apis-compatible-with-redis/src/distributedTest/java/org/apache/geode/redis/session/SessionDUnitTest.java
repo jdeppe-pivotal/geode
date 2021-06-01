@@ -90,8 +90,9 @@ public abstract class SessionDUnitTest {
     setupAppPorts();
     setupGeodeRedis();
 
-    RetryConfig config = RetryConfig.custom().maxAttempts(5)
-        .ignoreExceptions(HttpServerErrorException.InternalServerError.class)
+    RetryConfig config = RetryConfig.custom()
+        .maxAttempts(3)
+        .retryExceptions(HttpServerErrorException.InternalServerError.class)
         .build();
     RetryRegistry registry = RetryRegistry.of(config);
     retry = registry.retry("sessions");
@@ -165,7 +166,6 @@ public abstract class SessionDUnitTest {
     int httpPort = ports.get(sessionApp);
     VM host = cluster.getVM(sessionApp);
     host.invoke("Start a Spring app", () -> {
-      System.setProperty("logging.level.org.springframework", "DEBUG");
       System.setProperty("server.port", "" + httpPort);
       System.setProperty("server.servlet.session.timeout", "" + sessionTimeout + "s");
 
