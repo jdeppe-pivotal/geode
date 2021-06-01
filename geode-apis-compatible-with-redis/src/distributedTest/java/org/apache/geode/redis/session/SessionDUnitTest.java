@@ -89,7 +89,7 @@ public abstract class SessionDUnitTest {
     setupAppPorts();
     setupGeodeRedis();
 
-    RetryConfig config = RetryConfig.custom().maxAttempts(3).build();
+    RetryConfig config = RetryConfig.custom().maxAttempts(5).build();
     RetryRegistry registry = RetryRegistry.of(config);
     retry = registry.retry("sessions");
   }
