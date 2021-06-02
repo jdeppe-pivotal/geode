@@ -19,6 +19,7 @@ package org.apache.geode.redis.session;
 import java.net.HttpCookie;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
@@ -220,6 +221,12 @@ public abstract class SessionDUnitTest {
 
   private Void addNoteToSession0(int sessionApp, String sessionCookie, String note)
       throws Exception {
+    // Check if we've been able to do it already
+    String[] existingNotes = getSessionNotes0(sessionApp, sessionCookie);
+    if (Arrays.asList(existingNotes).contains(note)) {
+      return null;
+    }
+
     HttpHeaders requestHeaders = new HttpHeaders();
     requestHeaders.add("Cookie", sessionCookie);
     List<String> notes = new ArrayList<>();
