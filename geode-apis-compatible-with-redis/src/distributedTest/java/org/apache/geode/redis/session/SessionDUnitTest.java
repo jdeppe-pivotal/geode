@@ -83,6 +83,7 @@ public abstract class SessionDUnitTest {
   private RedisClusterClient redisClient;
   private static StatefulRedisClusterConnection<String, String> connection;
   protected static RedisAdvancedClusterCommands<String, String> commands;
+  private static RetryRegistry registry;
   private static Retry retry;
 
   @BeforeClass
@@ -97,7 +98,7 @@ public abstract class SessionDUnitTest {
         .maxAttempts(10)
         .retryExceptions(HttpServerErrorException.InternalServerError.class)
         .build();
-    RetryRegistry registry = RetryRegistry.of(config);
+    registry = RetryRegistry.of(config);
     retry = registry.retry("sessions");
   }
 
@@ -185,6 +186,7 @@ public abstract class SessionDUnitTest {
   }
 
   protected String createNewSessionWithNote(int sessionApp, String note) throws Exception {
+    Retry retry = registry.retry("sessions");
     return Retry.decorateCallable(retry, () -> createNewSessionWithNote0(sessionApp, note)).call();
   }
 
@@ -199,6 +201,7 @@ public abstract class SessionDUnitTest {
   }
 
   protected String[] getSessionNotes(int sessionApp, String sessionCookie) throws Exception {
+    Retry retry = registry.retry("sessions");
     return Retry.decorateCallable(retry, () -> getSessionNotes0(sessionApp, sessionCookie)).call();
   }
 
@@ -214,6 +217,7 @@ public abstract class SessionDUnitTest {
   }
 
   void addNoteToSession(int sessionApp, String sessionCookie, String note) throws Exception {
+    Retry retry = registry.retry("sessions");
     Retry.decorateCallable(retry, () -> addNoteToSession0(sessionApp, sessionCookie, note))
         .call();
   }
