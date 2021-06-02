@@ -14,8 +14,8 @@
  */
 package org.apache.geode.redis.session.springRedisTestApplication;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -35,34 +35,28 @@ public class SessionController {
 
   @SuppressWarnings("unchecked")
   @GetMapping("/getSessionNotes")
-  public List<String> getSessionNotes(HttpServletRequest request) {
+  public Set<String> getSessionNotes(HttpServletRequest request) {
     HttpSession session = request.getSession(false);
 
     if (session == null) {
       return null;
     } else {
-      return (List<String>) session.getAttribute("NOTES");
+      return (Set<String>) session.getAttribute("NOTES");
     }
   }
 
   @SuppressWarnings("unchecked")
   @PostMapping("/addSessionNote")
   public void addSessionNote(@RequestBody String note, HttpServletRequest request) {
-    try {
-      List<String> notes =
-          (List<String>) request.getSession().getAttribute("NOTES");
+    Set<String> notes =
+        (Set<String>) request.getSession().getAttribute("NOTES");
 
-      if (notes == null) {
-        notes = new ArrayList<>();
-      }
-
-      notes.add(note);
-      request.getSession().setAttribute("NOTES", notes);
-    } catch (Exception ex) {
-      logger.warn("---||| addSessionNote exception", ex);
-      throw ex;
+    if (notes == null) {
+      notes = new HashSet<>();
     }
 
+    notes.add(note);
+    request.getSession().setAttribute("NOTES", notes);
   }
 
   @GetMapping("/getSessionID")
