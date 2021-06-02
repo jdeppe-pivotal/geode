@@ -43,6 +43,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
+import org.junit.rules.TestName;
 import org.springframework.boot.SpringApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.http.HttpEntity;
@@ -53,6 +54,7 @@ import org.springframework.web.client.RestTemplate;
 
 import org.apache.geode.internal.AvailablePortHelper;
 import org.apache.geode.logging.internal.log4j.api.FastLogger;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.redis.session.springRedisTestApplication.RedisSpringTestApplication;
 import org.apache.geode.test.awaitility.GeodeAwaitility;
 import org.apache.geode.test.dunit.VM;
@@ -61,12 +63,17 @@ import org.apache.geode.test.dunit.rules.RedisClusterStartupRule;
 
 public abstract class SessionDUnitTest {
 
+  private static final Logger logger = LogService.getLogger();
+
   @ClassRule
   public static RedisClusterStartupRule cluster = new RedisClusterStartupRule();
 
   @Rule
   public DistributedRestoreSystemProperties restoreSystemProperties =
       new DistributedRestoreSystemProperties();
+
+  @Rule
+  public TestName testName = new TestName();
 
   // 30 minutes
   protected static final int DEFAULT_SESSION_TIMEOUT = 60 * 30;
@@ -83,7 +90,6 @@ public abstract class SessionDUnitTest {
   private RedisClusterClient redisClient;
   private static StatefulRedisClusterConnection<String, String> connection;
   protected static RedisAdvancedClusterCommands<String, String> commands;
-  private static RetryRegistry registry;
   private static Retry retry;
 
   @BeforeClass
@@ -98,7 +104,7 @@ public abstract class SessionDUnitTest {
         .maxAttempts(10)
         .retryExceptions(HttpServerErrorException.InternalServerError.class)
         .build();
-    registry = RetryRegistry.of(config);
+    RetryRegistry registry = RetryRegistry.of(config);
     retry = registry.retry("sessions");
   }
 
@@ -147,6 +153,13 @@ public abstract class SessionDUnitTest {
 
   @After
   public void cleanupAfterTest() {
+    logger.info("RetryMetrics after test {}: [successfulCallsWithRetries: {} successfulCallsWithoutRetries: {} failedCallsWithRetries: {} failedCallsWithoutRetries: {}]",
+        testName.getMethodName(),
+        retry.getMetrics().getNumberOfSuccessfulCallsWithRetryAttempt(),
+        retry.getMetrics().getNumberOfSuccessfulCallsWithoutRetryAttempt(),
+        retry.getMetrics().getNumberOfFailedCallsWithRetryAttempt(),
+        retry.getMetrics().getNumberOfFailedCallsWithoutRetryAttempt());
+
     GeodeAwaitility.await().ignoreExceptions()
         .untilAsserted(() -> cluster.flushAll(ports.get(SERVER1)));
 
@@ -186,7 +199,6 @@ public abstract class SessionDUnitTest {
   }
 
   protected String createNewSessionWithNote(int sessionApp, String note) throws Exception {
-    Retry retry = registry.retry("sessions");
     return Retry.decorateCallable(retry, () -> createNewSessionWithNote0(sessionApp, note)).call();
   }
 
@@ -201,7 +213,6 @@ public abstract class SessionDUnitTest {
   }
 
   protected String[] getSessionNotes(int sessionApp, String sessionCookie) throws Exception {
-    Retry retry = registry.retry("sessions");
     return Retry.decorateCallable(retry, () -> getSessionNotes0(sessionApp, sessionCookie)).call();
   }
 
@@ -217,7 +228,6 @@ public abstract class SessionDUnitTest {
   }
 
   void addNoteToSession(int sessionApp, String sessionCookie, String note) throws Exception {
-    Retry retry = registry.retry("sessions");
     Retry.decorateCallable(retry, () -> addNoteToSession0(sessionApp, sessionCookie, note))
         .call();
   }
