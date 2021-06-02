@@ -101,7 +101,7 @@ public abstract class SessionDUnitTest {
 
   protected static void setupRetry() {
     RetryConfig config = RetryConfig.custom()
-        .maxAttempts(10)
+        .maxAttempts(20)
         .retryExceptions(HttpServerErrorException.InternalServerError.class)
         .build();
     RetryRegistry registry = RetryRegistry.of(config);
