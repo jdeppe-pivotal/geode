@@ -89,9 +89,12 @@ public abstract class SessionDUnitTest {
   public static void setup() {
     setupAppPorts();
     setupGeodeRedis();
+    setupRetry();
+  }
 
+  protected static void setupRetry() {
     RetryConfig config = RetryConfig.custom()
-        .maxAttempts(5)
+        .maxAttempts(10)
         .retryExceptions(HttpServerErrorException.InternalServerError.class)
         .build();
     RetryRegistry registry = RetryRegistry.of(config);
