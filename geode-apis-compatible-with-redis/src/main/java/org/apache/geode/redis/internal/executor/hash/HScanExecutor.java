@@ -70,6 +70,7 @@ public class HScanExecutor extends AbstractScanExecutor {
     RedisData value = context.getRegionProvider().getRedisData(key, null);
     if (value == null) {
       context.getRedisStats().incKeyspaceMisses();
+      logger.warn("---||| Returning emptyScan()");
       return RedisResponse.emptyScan();
     }
 
