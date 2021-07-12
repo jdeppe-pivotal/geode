@@ -80,6 +80,10 @@ public class HScanDunitTest {
     redisClusterStartupRule.startRedisVM(2, locatorPort);
     redisClusterStartupRule.startRedisVM(3, locatorPort);
 
+    redisClusterStartupRule.enableDebugLogging(1);
+    redisClusterStartupRule.enableDebugLogging(2);
+    redisClusterStartupRule.enableDebugLogging(3);
+
     int redisServerPort1 = redisClusterStartupRule.getRedisPort(1);
     clusterClient = RedisClusterClient.create("redis://localhost:" + redisServerPort1);
 
@@ -192,6 +196,7 @@ public class HScanDunitTest {
     do {
       redisClusterStartupRule.crashVM(vmToCrashToggle);
       vm = redisClusterStartupRule.startRedisVM(vmToCrashToggle, locator.getPort());
+      redisClusterStartupRule.enableDebugLogging(vmToCrashToggle);
       rebalanceAllRegions(vm);
       numberOfTimesServersCrashed.incrementAndGet();
       vmToCrashToggle = (vmToCrashToggle == 2) ? 3 : 2;
