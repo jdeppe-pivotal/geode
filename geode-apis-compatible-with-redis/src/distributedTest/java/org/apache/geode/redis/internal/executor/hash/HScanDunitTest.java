@@ -44,6 +44,7 @@ import org.junit.Test;
 
 import org.apache.geode.cache.control.RebalanceFactory;
 import org.apache.geode.cache.control.ResourceManager;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.redis.internal.cluster.RedisMemberInfo;
 import org.apache.geode.test.dunit.rules.ClusterStartupRule;
 import org.apache.geode.test.dunit.rules.MemberVM;
@@ -180,7 +181,17 @@ public class HScanDunitTest {
       RedisMemberInfo memberAfter = redisClusterStartupRule.getMemberInfo(HASH_KEY);
 
       if (memberBefore.equals(memberAfter)) {
-        assertThat(allEntries).containsAll(INITIAL_DATA_SET.keySet());
+        try {
+          assertThat(allEntries).containsAll(INITIAL_DATA_SET.keySet());
+        } catch (AssertionError ex) {
+          try {
+            long hlen = Retry.decorateCallable(retry, () -> commands.hlen(HASH_KEY)).call();
+            LogService.getLogger().warn("---||| hlen() -> {}", hlen);
+          } catch (Exception exception) {
+            LogService.getLogger().warn("---||| Unable to call hlen()", exception);
+          }
+          throw ex;
+        }
         numberOfAssertionsCompleted++;
       }
     }
