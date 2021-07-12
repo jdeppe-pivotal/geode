@@ -65,7 +65,8 @@ public class HScanDunitTest {
 
   private static final String HASH_KEY = "key";
   private static final String BASE_FIELD = "baseField_";
-  private static final Map<String, String> INITIAL_DATA_SET = makeEntrySet(1000);
+//  private static final Map<String, String> INITIAL_DATA_SET = makeEntrySet(1000);
+  private static final Map<String, String> INITIAL_DATA_SET = makeEntrySet(100);
 
   private static Retry retry;
 
@@ -212,11 +213,9 @@ public class HScanDunitTest {
   }
 
   private static void rebalanceAllRegions(MemberVM vm) {
-    vm.invoke(() -> {
-
+    vm.invoke("Rebalancing", () -> {
       ResourceManager manager = ClusterStartupRule.getCache().getResourceManager();
       RebalanceFactory factory = manager.createRebalanceFactory();
-
       try {
         factory.start().getResults();
       } catch (InterruptedException e) {
