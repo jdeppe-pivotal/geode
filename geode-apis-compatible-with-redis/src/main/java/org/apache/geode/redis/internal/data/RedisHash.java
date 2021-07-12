@@ -100,10 +100,12 @@ public class RedisHash extends AbstractRedisData {
       throws IOException, ClassNotFoundException {
     super.fromData(in, context);
     int size = DataSerializer.readInteger(in);
-    hash = new SizeableObject2ObjectOpenCustomHashMapWithCursor<>(size, ByteArrays.HASH_STRATEGY);
+    SizeableObject2ObjectOpenCustomHashMapWithCursor<byte[], byte[]> newHash =
+        new SizeableObject2ObjectOpenCustomHashMapWithCursor<>(size, ByteArrays.HASH_STRATEGY);
     for (int i = 0; i < size; i++) {
-      hash.put(DataSerializer.readByteArray(in), DataSerializer.readByteArray(in));
+      newHash.put(DataSerializer.readByteArray(in), DataSerializer.readByteArray(in));
     }
+    hash = newHash;
   }
 
   @Override
