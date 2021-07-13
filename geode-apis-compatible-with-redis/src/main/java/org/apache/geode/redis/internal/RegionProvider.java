@@ -33,6 +33,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import org.apache.logging.log4j.Logger;
+
 import org.apache.geode.cache.PartitionAttributesFactory;
 import org.apache.geode.cache.Region;
 import org.apache.geode.cache.RegionDestroyedException;
@@ -45,7 +47,9 @@ import org.apache.geode.internal.cache.InternalCache;
 import org.apache.geode.internal.cache.InternalRegionFactory;
 import org.apache.geode.internal.cache.PartitionedRegion;
 import org.apache.geode.internal.cache.PrimaryBucketLockException;
+import org.apache.geode.internal.cache.control.InternalResourceManager;
 import org.apache.geode.internal.cache.execute.BucketMovedException;
+import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.management.ManagementException;
 import org.apache.geode.redis.internal.cluster.RedisMemberInfo;
 import org.apache.geode.redis.internal.data.NullRedisDataStructures;
@@ -106,12 +110,57 @@ public class RegionProvider {
     NULL_TYPES.put(REDIS_DATA, NULL_REDIS_DATA);
   }
 
+  public static class RedisRegionObserver extends InternalResourceManager.ResourceObserverAdapter {
+    private static final Logger logger = LogService.getLogger();
+
+    @Override
+    public void rebalancingFinished(Region<?, ?> region) {
+      logger.info("---||| ResourceObserver - rebalancingFinished: {}", region.getName());
+    }
+
+    @Override
+    public void rebalancingStarted(Region<?, ?> region) {
+      logger.info("---||| ResourceObserver - rebalancingStarted: {}", region.getName());
+    }
+
+    @Override
+    public void recoveryFinished(Region<?, ?> region) {
+      logger.info("---||| ResourceObserver - recoveryFinished: {}", region.getName());
+    }
+
+    @Override
+    public void recoveryStarted(Region<?, ?> region) {
+      logger.info("---||| ResourceObserver - recoveryStarted: {}", region.getName());
+    }
+
+    @Override
+    public void recoveryConflated(PartitionedRegion region) {
+      logger.info("---||| ResourceObserver - recoveryConflated: {}", region.getName());
+    }
+
+    @Override
+    public void movingBucket(Region<?, ?> region, int bucketId, DistributedMember source,
+        DistributedMember target) {
+      logger.info("---||| ResourceObserver - movingBucket: {} {} -> {}", bucketId,
+          source.getUniqueId(), target.getUniqueId());
+    }
+
+    @Override
+    public void movingPrimary(Region<?, ?> region, int bucketId, DistributedMember source,
+        DistributedMember target) {
+      logger.info("---||| ResourceObserver - movingPrimary: {} {} -> {}", bucketId,
+          source.getUniqueId(), target.getUniqueId());
+    }
+  }
+
   public RegionProvider(InternalCache cache, StripedExecutor stripedExecutor,
       RedisStats redisStats) {
     validateBucketCount(REDIS_REGION_BUCKETS);
 
     this.stripedExecutor = stripedExecutor;
     this.redisStats = redisStats;
+
+    InternalResourceManager.setResourceObserver(new RedisRegionObserver());
 
     InternalRegionFactory<RedisKey, RedisData> redisDataRegionFactory =
         cache.createInternalRegionFactory(RegionShortcut.PARTITION_REDUNDANT);

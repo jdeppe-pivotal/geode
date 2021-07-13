@@ -66,17 +66,17 @@ public class HScanExecutor extends AbstractScanExecutor {
       return RedisResponse.error(ERROR_CURSOR);
     }
 
-    RedisKey key = command.getKey();
-    RedisData value = context.getRegionProvider().getRedisData(key, null);
-    if (value == null) {
-      context.getRedisStats().incKeyspaceMisses();
-      logger.warn("---||| Returning emptyScan()");
-      return RedisResponse.emptyScan();
-    }
-
-    if (value.getType() != REDIS_HASH) {
-      throw new RedisDataTypeMismatchException(ERROR_WRONG_TYPE);
-    }
+//    RedisKey key = command.getKey();
+//    RedisData value = context.getRegionProvider().getRedisData(key, null);
+//    if (value == null) {
+//      context.getRedisStats().incKeyspaceMisses();
+//      logger.warn("---||| Returning emptyScan()");
+//      return RedisResponse.emptyScan();
+//    }
+//
+//    if (value.getType() != REDIS_HASH) {
+//      throw new RedisDataTypeMismatchException(ERROR_WRONG_TYPE);
+//    }
 
     command.getCommandType().checkDeferredParameters(command, context);
 
@@ -114,7 +114,7 @@ public class HScanExecutor extends AbstractScanExecutor {
     RedisHashCommands redisHashCommands = context.getHashCommands();
 
     Pair<Integer, List<byte[]>> scanResult =
-        redisHashCommands.hscan(key, matchPattern, count, cursor);
+        redisHashCommands.hscan(command.getKey(), matchPattern, count, cursor);
 
     return RedisResponse.scan(new BigInteger(String.valueOf(scanResult.getLeft())),
         scanResult.getRight());

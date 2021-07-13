@@ -36,19 +36,14 @@ import io.lettuce.core.cluster.ClusterClientOptions;
 import io.lettuce.core.cluster.ClusterTopologyRefreshOptions;
 import io.lettuce.core.cluster.RedisClusterClient;
 import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import org.apache.logging.log4j.Logger;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.apache.geode.cache.Region;
 import org.apache.geode.cache.control.RebalanceFactory;
 import org.apache.geode.cache.control.ResourceManager;
-import org.apache.geode.distributed.DistributedMember;
-import org.apache.geode.internal.cache.PartitionedRegion;
-import org.apache.geode.internal.cache.control.InternalResourceManager;
 import org.apache.geode.logging.internal.log4j.api.LogService;
 import org.apache.geode.redis.internal.cluster.RedisMemberInfo;
 import org.apache.geode.test.dunit.rules.ClusterStartupRule;
@@ -71,7 +66,7 @@ public class HScanDunitTest {
 
   private static final String HASH_KEY = "key";
   private static final String BASE_FIELD = "baseField_";
-//  private static final Map<String, String> INITIAL_DATA_SET = makeEntrySet(1000);
+  // private static final Map<String, String> INITIAL_DATA_SET = makeEntrySet(1000);
   private static final Map<String, String> INITIAL_DATA_SET = makeEntrySet(100);
 
   private static Retry retry;
@@ -90,10 +85,6 @@ public class HScanDunitTest {
     redisClusterStartupRule.enableDebugLogging(1);
     redisClusterStartupRule.enableDebugLogging(2);
     redisClusterStartupRule.enableDebugLogging(3);
-
-    installResourceObserver(1);
-    installResourceObserver(2);
-    installResourceObserver(3);
 
     int redisServerPort1 = redisClusterStartupRule.getRedisPort(1);
     clusterClient = RedisClusterClient.create("redis://localhost:" + redisServerPort1);
@@ -119,12 +110,6 @@ public class HScanDunitTest {
         .build();
     RetryRegistry registry = RetryRegistry.of(config);
     retry = registry.retry("retries");
-  }
-
-  private static void installResourceObserver(int vmId) {
-    redisClusterStartupRule.getVM(vmId).invoke("Installing ResourceObserver", () -> {
-      InternalResourceManager.setResourceObserver(new MyObserver());
-    });
   }
 
   @AfterClass
@@ -224,7 +209,6 @@ public class HScanDunitTest {
       redisClusterStartupRule.crashVM(vmToCrashToggle);
       vm = redisClusterStartupRule.startRedisVM(vmToCrashToggle, locator.getPort());
       redisClusterStartupRule.enableDebugLogging(vmToCrashToggle);
-      installResourceObserver(vmToCrashToggle);
       rebalanceAllRegions(vm);
       numberOfTimesServersCrashed.incrementAndGet();
       vmToCrashToggle = (vmToCrashToggle == 2) ? 3 : 2;
@@ -249,49 +233,6 @@ public class HScanDunitTest {
         throw new RuntimeException(e);
       }
     });
-  }
-
-  public static class MyObserver extends InternalResourceManager.ResourceObserverAdapter {
-    private static final Logger logger = LogService.getLogger();
-
-    @Override
-    public void rebalancingFinished(Region<?, ?> region) {
-      logger.info("---||| ResourceObserver - rebalancingFinished: {}", region.getName());
-    }
-
-    @Override
-    public void rebalancingStarted(Region<?, ?> region) {
-      logger.info("---||| ResourceObserver - rebalancingStarted: {}", region.getName());
-    }
-
-    @Override
-    public void recoveryFinished(Region<?, ?> region) {
-      logger.info("---||| ResourceObserver - recoveryFinished: {}", region.getName());
-    }
-
-    @Override
-    public void recoveryStarted(Region<?, ?> region) {
-      logger.info("---||| ResourceObserver - recoveryStarted: {}", region.getName());
-    }
-
-    @Override
-    public void recoveryConflated(PartitionedRegion region) {
-      logger.info("---||| ResourceObserver - recoveryConflated: {}", region.getName());
-    }
-
-    @Override
-    public void movingBucket(Region<?, ?> region, int bucketId, DistributedMember source,
-                             DistributedMember target) {
-      logger.info("---||| ResourceObserver - movingBucket: {} {} -> {}", bucketId,
-          source.getUniqueId(), target.getUniqueId());
-    }
-
-    @Override
-    public void movingPrimary(Region<?, ?> region, int bucketId, DistributedMember source,
-                              DistributedMember target) {
-      logger.info("---||| ResourceObserver - movingPrimary: {} {} -> {}", bucketId,
-          source.getUniqueId(), target.getUniqueId());
-    }
   }
 
 }
